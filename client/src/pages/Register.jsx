@@ -16,18 +16,27 @@ const Register = () => {
     setMsg("");
 
     try {
-      const res = await axios.post("http://localhost:5000/register", {
-        name,
-        email,
-        password,
-      });
+      const res = await axios.post(
+        "http://localhost:5000/api/auth/register",
+        { name, email, password },
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
 
       if (res.data.success) {
         setMsg("✅ Registered successfully!");
-        // navigate("/");
+        // Optional: save token for future use
+        localStorage.setItem("token", res.data.token);
+
+        // Navigate to login or dashboard
+        navigate("/dashboard"); // or navigate("/login") if you prefer
       }
     } catch (err) {
-      setMsg("❌ " + (err.response?.data?.msg || "Error during registration"));
+      // Handle error message from backend or default message
+      setMsg(
+        "❌ " + (err.response?.data?.msg || "Error during registration")
+      );
     }
   };
 
@@ -95,14 +104,15 @@ const Register = () => {
           </form>
 
           {msg && (
-            <p className="text-sm text-center mt-4 italic text-red-700">
-              {msg}
-            </p>
+            <p className="text-sm text-center mt-4 italic text-red-700">{msg}</p>
           )}
 
           <p className="text-sm italic text-gray-700 text-center mt-6">
             Already have an account?{" "}
-            <Link to="/login" className="text-[#805300] font-semibold underline">
+            <Link
+              to="/login"
+              className="text-[#805300] font-semibold underline"
+            >
               Log in
             </Link>
           </p>
