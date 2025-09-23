@@ -3,7 +3,7 @@ import { FaEnvelope, FaLock } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useGoogleLogin } from "@react-oauth/google";
-import { jwtDecode } from "jwt-decode"; // fix here
+import { jwtDecode } from "jwt-decode";
 
 import googleIcon from "../assets/google-icon.png";
 import illustration from "../assets/login-illustration.jpg";
@@ -19,21 +19,19 @@ const Login = () => {
     setMessage("");
 
     try {
-      const response = await axios.post("http://localhost:5000/api/auth/login", {
+      const response = await axios.post("/api/auth/login", {
         email,
         password,
       });
 
       if (response.data.success) {
         setMessage("✅ Login successful!");
-        // Optionally save token to localStorage
-        localStorage.setItem("token", response.data.token);
-        navigate("/dashboard");
+        navigate("/main");
       } else {
         setMessage("❌ Invalid credentials");
       }
     } catch (err) {
-      setMessage("❌ " + (err.response?.data?.msg || "Error logging in"));
+      setMessage("❌ Error logging in");
     }
   };
 
@@ -58,6 +56,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row font-sans">
+      
       {/* LEFT: Illustration */}
       <div className="w-full md:w-[60%] flex items-center justify-center bg-white py-10">
         <img
