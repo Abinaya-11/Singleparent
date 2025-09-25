@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, Lightbulb, Heart, Home, Users, MapPin, MessageCircle, Handshake,Bell } from 'lucide-react';
 import mainimage from "../assets/hero_section.webp";
 import e1 from "../assets/E1.jpg";
 import e3 from "../assets/E3.jpg";
 import e2 from "../assets/E2.png";
 import e4 from "../assets/E4.png";
+import { useNavigate } from "react-router-dom";
 const MainPage = () => {
   const [currentSection, setCurrentSection] = useState(0);
 
@@ -22,6 +23,31 @@ const MainPage = () => {
     const element = document.getElementById(sections[index]);
     element?.scrollIntoView({ behavior: 'smooth' });
   };
+  const [showDropdown, setShowDropdown] = useState(false);
+    const navigate = useNavigate();
+    const dropdownRef = useRef(null);
+
+    const handleLogout = () => {
+      console.log("Logging out..."); 
+      // ✅ Clear tokens/session if needed
+      localStorage.removeItem("userToken"); // optional
+
+      // 🔹 Redirect to homepage
+      navigate("/");
+    };
+
+
+      // close dropdown when clicking outside
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+          setShowDropdown(false);
+        }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -49,15 +75,47 @@ const MainPage = () => {
               }} className="text-gray-700 hover:text-amber-600 transition-colors">About Us</button>
             </div>
            
-            {/* Profile + Notification icons */}
-            <div className="flex space-x-4">
-              <button className="p-2 rounded-full hover:bg-gray-100 transition">
-                <Bell className="w-6 h-6 text-gray-700" />
+          {/* Profile + Notification */}
+          <div className="flex items-center space-x-4 relative" ref={dropdownRef}>
+            {/* Notification Bell */}
+            <button className="p-2 rounded-full hover:bg-gray-100 transition">
+              <Bell className="w-6 h-6 text-gray-700" />
+            </button>
+
+          {/* Profile Icon with Dropdown */}
+          <div className="relative">
+            <button
+              className="p-2 rounded-full hover:bg-gray-100 transition"
+              onClick={() => setShowDropdown(!showDropdown)}
+            >
+              <User className="w-6 h-6 text-gray-700" />
+            </button>
+
+          {showDropdown && (
+            <div className="absolute right-0 mt-2 w-40 bg-white border rounded-lg shadow-lg py-2 z-50">
+              <button
+                onClick={() => {
+                  setShowDropdown(false);
+                  navigate("/profile");
+                }}
+                className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
+              >
+                View Profile
               </button>
-              <button className="p-2 rounded-full hover:bg-gray-100 transition">
-                <User className="w-6 h-6 text-gray-700" />
+              <button
+                onClick={() => {
+                  setShowDropdown(false);
+                  handleLogout();
+                }}
+                className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
+              >
+                Logout
               </button>
             </div>
+          )}
+        </div>
+      </div>
+
           </div>
         </div>
       </nav>
