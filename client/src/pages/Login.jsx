@@ -3,7 +3,7 @@ import { FaEnvelope, FaLock } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useGoogleLogin } from "@react-oauth/google";
-import { jwtDecode } from "jwt-decode";
+import { jwtDecode } from "jwt-decode"; // fixed import
 
 import googleIcon from "../assets/google-icon.png";
 import illustration from "../assets/login-illustration.jpg";
@@ -19,18 +19,19 @@ const Login = () => {
     setMessage("");
 
     try {
-      const response = await axios.post("/api/auth/login", {
-        email,
-        password,
-      });
+      const response = await axios.post("/api/auth/login", { email, password });
 
       if (response.data.success) {
+        // ✅ Store JWT token
+        localStorage.setItem("userToken", response.data.token);
+
         setMessage("✅ Login successful!");
-        navigate("/main");
+        navigate("/main"); // Redirect to MainPage
       } else {
         setMessage("❌ Invalid credentials");
       }
     } catch (err) {
+      console.error(err);
       setMessage("❌ Error logging in");
     }
   };
@@ -39,10 +40,10 @@ const Login = () => {
     onSuccess: async (tokenResponse) => {
       try {
         const decoded = jwtDecode(tokenResponse.credential);
-        console.log("Google user:", decoded);
+        localStorage.setItem("userToken", tokenResponse.credential);
 
         setMessage(`✅ Welcome ${decoded.name}`);
-        navigate("/dashboard");
+        navigate("/main"); // Redirect to MainPage
       } catch (error) {
         console.error("Google Login Error:", error);
         setMessage("❌ Google login failed");
@@ -56,21 +57,12 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row font-sans">
-      
-      {/* LEFT: Illustration */}
       <div className="w-full md:w-[60%] flex items-center justify-center bg-white py-10">
-        <img
-          src={illustration}
-          alt="Login Illustration"
-          className="w-[80%] max-w-sm md:max-w-[75%] object-contain"
-        />
+        <img src={illustration} alt="Login Illustration" className="w-[80%] max-w-sm md:max-w-[75%] object-contain" />
       </div>
 
-      {/* RIGHT: Form */}
       <div className="w-full md:w-[40%] bg-[#fcd385] flex flex-col justify-center px-6 sm:px-12 py-10">
-        <h2 className="text-2xl italic text-[#805300] mb-8 text-center">
-          Welcome
-        </h2>
+        <h2 className="text-2xl italic text-[#805300] mb-8 text-center">Welcome</h2>
 
         <form onSubmit={handleLogin}>
           <div className="flex items-center bg-white rounded-md px-3 py-2 mb-4">
@@ -97,19 +89,12 @@ const Login = () => {
             />
           </div>
 
-          <button
-            type="submit"
-            className="bg-[#ecb129] text-white font-semibold py-2 rounded-md mb-4 w-full hover:bg-[#d8a419]"
-          >
+          <button type="submit" className="bg-[#ecb129] text-white font-semibold py-2 rounded-md mb-4 w-full hover:bg-[#d8a419]">
             Log In
           </button>
         </form>
 
-        {message && (
-          <p className="text-center text-sm text-red-700 italic mb-3">
-            {message}
-          </p>
-        )}
+        {message && <p className="text-center text-sm text-red-700 italic mb-3">{message}</p>}
 
         <Link to="/register">
           <button className="bg-white text-[#ecb129] font-semibold border border-[#ecb129] py-2 rounded-md mb-4 w-full hover:bg-[#fff4dc]">

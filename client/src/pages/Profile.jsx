@@ -1,228 +1,435 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  MessageSquare, 
+  Users, 
+  MapPin, 
+  FileText, 
+  Bell, 
+  Target, 
+  Paperclip, 
+  Image 
+} from 'lucide-react';
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
-const Profile = () => {
+export default function GrowConnectProfile({ notifications, setNotifications }) {
+  const [activeTab, setActiveTab] = useState('posts');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [profileFile, setProfileFile] = useState(null); 
+  const [profilePic, setProfilePic] = useState(''); 
+  const [location, setLocation] = useState('');
+  const [bio, setBio] = useState('');
+  const [interests, setInterests] = useState([]);
+  const [posts, setPosts] = useState([]);
+  const [thoughts, setThoughts] = useState([]);
+  const dropdownRef = useRef(null);
+  const navigate = useNavigate();
 
+  const interestOptions = ["UI/UX Design", "Product Management", "Storytelling", "Prototyping", "Communication", "Figma"];
+
+  const handleLogout = () => {
+    localStorage.removeItem("userToken");
+    navigate("/login");
+  };
+
+  // Fetch profile
   useEffect(() => {
-    // Simulate loading spinner
-    const timer = setTimeout(() => setLoading(false), 3000);
-    return () => clearTimeout(timer);
+    const token = localStorage.getItem("userToken");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+    const fetchProfile = async () => {
+      try {
+        const res = await axios.get("/api/user/profile", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const u = res.data.user;
+
+        setUser(u);
+        setProfilePic(u.profilePic ? `/${u.profilePic}` : '');
+        setLocation(u.location || '');
+        setBio(u.bio || '');
+
+        let parsedInterests = [];
+        if (Array.isArray(u.interests)) {
+          parsedInterests = u.interests;
+        } else if (typeof u.interests === 'string') {
+          try {
+            parsedInterests = JSON.parse(u.interests || "[]");
+            if (!Array.isArray(parsedInterests)) {
+              parsedInterests = parsedInterests ? [parsedInterests] : [];
+            }
+          } catch (e) {
+            parsedInterests = u.interests ? [u.interests] : [];
+          }
+        } else {
+          parsedInterests = [];
+        }
+        setInterests(parsedInterests);
+
+        // Fetch user's posts and thoughts if available
+        setPosts(res.data.user.posts || []);
+        setThoughts(res.data.user.thoughts || []);
+
+        setLoading(false);
+      } catch (err) {
+        console.error("Profile fetch error:", err);
+        localStorage.removeItem("userToken");
+        navigate("/login");
+      }
+    };
+    fetchProfile();
+  }, [navigate]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  return (
-    <div className="container">
-      <style>{`
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#f8f9fa; color:#333; }
-        .container { max-width:900px; margin:0 auto; background:white; min-height:100vh; }
+  // Handle profile update with FormData
+  const handleProfileUpdate = async () => {
+    try {
+      const token = localStorage.getItem("userToken");
+      const formData = new FormData();
 
-        /* Header */
-        .header { display:flex; justify-content:space-between; align-items:center; padding:20px 40px; border-bottom:1px solid #e9ecef; }
-        .logo { color:#6366f1; font-size:24px; font-weight:600; display:flex; align-items:center; }
-        .logo::before { content:"✱"; margin-right:10px; font-size:28px; }
-        .nav-menu { display:flex; list-style:none; gap:30px; }
-        .nav-menu li { color:#6c757d; cursor:pointer; font-size:14px; font-weight:500; }
-        .nav-menu li:hover { color:#6366f1; }
-        .nav-menu li.active { color:#333; }
-        .auth-buttons { display:flex; gap:10px; }
-        .btn-login, .btn-register { padding:8px 16px; border:none; border-radius:6px; font-size:14px; font-weight:500; cursor:pointer; }
-        .btn-login { background:#6366f1; color:white; }
-        .btn-register { background:#6c5ce7; color:white; }
+      if (profileFile) formData.append("profilePic", profileFile);
+      formData.append("location", location);
+      formData.append("bio", bio);
+      formData.append("interests", JSON.stringify(interests));
 
-        /* Profile Section */
-        .profile-section { background:#f8f9fa; padding:40px; display:flex; align-items:center; gap:30px; position:relative; }
-        .profile-avatar { width:120px; height:120px; border-radius:50%; background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); display:flex; align-items:center; justify-content:center; color:white; font-size:48px; font-weight:600; position:relative; z-index:2; }
-        .profile-info { flex:1; z-index:2; }
-        .profile-name { font-size:28px; font-weight:700; color:#333; margin-bottom:5px; }
-        .profile-title { color:#6c757d; font-size:16px; margin-bottom:5px; }
-        .profile-location { color:#6c757d; font-size:14px; margin-bottom:20px; }
-        .profile-buttons { display:flex; gap:15px; align-items:center; }
-        .btn-connect { background:#6366f1; color:white; padding:10px 20px; border:none; border-radius:6px; font-weight:500; cursor:pointer; display:flex; align-items:center; gap:5px; }
-        .btn-icon { background:white; border:1px solid #dee2e6; padding:10px 12px; border-radius:6px; cursor:pointer; color:#6c757d; font-size:14px; }
-
-        /* Stats Section */
-        .stats-section { display:flex; justify-content:space-around; padding:30px 40px; border-bottom:1px solid #e9ecef; }
-        .stat-item { text-align:center; display:flex; flex-direction:column; align-items:center; gap:8px; }
-        .stat-icon { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; margin-bottom:5px; }
-        .connections-icon { background:#e3f2fd; color:#1976d2; }
-        .groups-icon { background:#f3e5f5; color:#7b1fa2; }
-        .posts-icon { background:#fff3e0; color:#f57c00; }
-        .events-icon { background:#e8f5e8; color:#388e3c; }
-        .stat-number { font-size:24px; font-weight:700; color:#333; }
-        .stat-label { color:#6c757d; font-size:14px; font-weight:500; }
-
-        /* About Section */
-        .about-section { padding:40px; }
-        .section-title { font-size:20px; font-weight:600; color:#333; margin-bottom:20px; }
-        .subsection { margin-bottom:25px; }
-        .subsection-title { font-size:16px; font-weight:600; color:#333; margin-bottom:8px; }
-        .subsection-content { color:#6c757d; font-size:14px; line-height:1.5; }
-
-        /* Community Highlights */
-        .community-highlights { background:#f8f9fa; padding:40px; }
-        .highlights-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:30px; margin-top:20px; }
-        .highlight-card { background:white; padding:20px; border-radius:8px; border:1px solid #e9ecef; transition:all 0.3s ease; }
-        .highlight-card:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,0.1); }
-        .highlight-icon { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; margin-bottom:15px; }
-        .highlight-title { font-size:16px; font-weight:600; color:#333; margin-bottom:8px; }
-        .highlight-description { color:#6c757d; font-size:14px; line-height:1.4; margin-bottom:15px; }
-        .highlight-meta { display:flex; align-items:center; gap:10px; font-size:12px; color:#6c757d; }
-        .highlight-tag { background:#f8f9fa; padding:4px 8px; border-radius:4px; font-size:12px; }
-        .icon-pink { background:#fce4ec; color:#e91e63; }
-        .icon-purple { background:#f3e5f5; color:#9c27b0; }
-        .icon-orange { background:#fff3e0; color:#ff9800; }
-        .icon-blue { background:#e3f2fd; color:#2196f3; }
-        .icon-green { background:#e8f5e8; color:#4caf50; }
-
-        /* Footer */
-        .footer { display:flex; justify-content:space-between; align-items:center; padding:30px 40px; border-top:1px solid #e9ecef; }
-        .footer-links { display:flex; gap:20px; }
-        .footer-links a { color:#6c757d; text-decoration:none; font-size:14px; }
-        .footer-links a:hover { color:#333; }
-        .social-icons { display:flex; gap:15px; }
-        .social-icon { width:32px; height:32px; border-radius:50%; background:#f8f9fa; display:flex; align-items:center; justify-content:center; color:#6c757d; text-decoration:none; font-size:16px; }
-        .social-icon:hover { background:#6366f1; color:white; }
-
-        /* Loading spinner */
-        .loading-spinner { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:80px; height:80px; z-index:5; }
-        .spinner { width:80px; height:80px; border:3px solid #e9ecef; border-top:3px solid #6366f1; border-radius:50%; animation:spin 1s linear infinite; }
-        @keyframes spin { 0% { transform:rotate(0deg); } 100% { transform:rotate(360deg); } }
-
-        /* Responsive */
-        @media(max-width:768px){
-          .header{ padding:15px 20px; }
-          .nav-menu{ gap:15px; }
-          .profile-section{ padding:30px 20px; flex-direction:column; text-align:center; }
-          .stats-section{ padding:20px; }
-          .highlights-grid{ grid-template-columns:1fr; gap:20px; }
-          .about-section, .community-highlights{ padding:30px 20px; }
+      const res = await axios.put("/api/user/profile", formData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data"
         }
-      `}</style>
+      });
 
-      {/* Header */}
-      <header className="header">
-        <div className="logo">FamilyConnect - Homepage</div>
-        <nav>
-          <ul className="nav-menu">
-            <li className="active">Home</li>
-            <li>Explore</li>
-            <li>Community</li>
-            <li>Resources</li>
-            <li>About Us</li>
-          </ul>
-        </nav>
-        <div className="auth-buttons">
-          <button className="btn-login">Notification</button>
-          <button className="btn-register">Profile</button>
-        </div>
-      </header>
+      setUser(res.data.user);
+      setIsEditing(false);
+      alert("Profile updated successfully!");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update profile");
+    }
+  };
 
-      {/* Profile Section */}
-      <section className="profile-section">
-        {loading && (
-          <div className="loading-spinner">
-            <div className="spinner"></div>
-          </div>
-        )}
-        <div className="profile-avatar">SL</div>
-        <div className="profile-info">
-          <h1 className="profile-name">Sarah L.</h1>
-          <p className="profile-title">Single Parent | Community Builder | Seeking Support & Opportunities</p>
-          <p className="profile-location">New York, USA</p>
-          <div className="profile-buttons">
-            <button className="btn-connect" onClick={() => alert('Connection request sent!')}>🔗 Connect</button>
-            <button className="btn-icon" onClick={() => alert('Opening message composer...')}>✉️ Message</button>
-            <button className="btn-icon">👤 Follow</button>
-          </div>
-        </div>
-      </section>
+  if (loading) return <div className="p-6">Loading profile...</div>;
+  if (!user) return <div className="p-6">No profile found</div>;
 
-      {/* Stats Section */}
-      <section className="stats-section">
-        <div className="stat-item">
-          <div className="stat-icon connections-icon">👥</div>
-          <div className="stat-number">160</div>
-          <div className="stat-label">Connections</div>
-        </div>
-        <div className="stat-item">
-          <div className="stat-icon groups-icon">🏛️</div>
-          <div className="stat-number">6</div>
-          <div className="stat-label">Groups</div>
-        </div>
-        <div className="stat-item">
-          <div className="stat-icon posts-icon">📝</div>
-          <div className="stat-number">46</div>
-          <div className="stat-label">Posts</div>
-        </div>
-        <div className="stat-item">
-          <div className="stat-icon events-icon">📅</div>
-          <div className="stat-number">12</div>
-          <div className="stat-label">Events</div>
-        </div>
-      </section>
+  const goToSection = (sectionId) => {
+    navigate("/main", { state: { scrollTo: sectionId } });
+  };
 
-      {/* About Section */}
-      <section className="about-section">
-        <h2 className="section-title">About</h2>
-        <div className="subsection">
-          <h3 className="subsection-title">Bio</h3>
-          <p className="subsection-content">
-            Sarah is a passionate single mother of two, dedicated to building a supportive network for parents in her community. She believes in the power of shared experiences and mutual encouragement to navigate the journey of parenthood.
-          </p>
-        </div>
-        <div className="subsection">
-          <h3 className="subsection-title">Personal Story</h3>
-          <p className="subsection-content">
-            After becoming a single parent, I found strength and inspiration in connecting with others facing similar challenges. OneConnect became my safe haven, helping me realize I wasn't alone. Now, I strive to offer that same support and understanding to new members, fostering a vibrant and inclusive community.
-          </p>
-        </div>
-      </section>
+  // Component for Create Post flow (button → box → post → back to button)
+  const CreatePostFlow = ({ type }) => {
+    const [showBox, setShowBox] = useState(false);
+    const [content, setContent] = useState('');
+    const [imageFile, setImageFile] = useState(null);
+    const [docFile, setDocFile] = useState(null);
 
-      {/* Community Highlights */}
-      <section className="community-highlights">
-        <h2 className="section-title">Community Highlights</h2>
-        <div className="highlights-grid">
-          <div className="highlight-card">
-            <div className="highlight-icon icon-pink">👑</div>
-            <h3 className="highlight-title">Single Moms United</h3>
-            <p className="highlight-description">A platform for single mothers to share advice, resources, and emotional support.</p>
-            <div className="highlight-meta">
-              <span className="highlight-tag">Sarah</span>
+    const handleAddPost = () => {
+      if (!content.trim() && !imageFile && !docFile) return;
+
+      const newPost = {
+        id: Date.now(),
+        content,
+        image: imageFile ? URL.createObjectURL(imageFile) : null,
+        doc: docFile ? docFile.name : null,
+        type
+      };
+
+      if (type === 'job') setPosts(prev => [newPost, ...prev]);
+      else setThoughts(prev => [newPost, ...prev]);
+
+      setContent('');
+      setImageFile(null);
+      setDocFile(null);
+      setShowBox(false); // Back to button after posting
+    };
+
+    if (!showBox) {
+      return (
+        <button
+          onClick={() => setShowBox(true)}
+          className="w-full bg-white border-dashed border-2 border-gray-300 text-amber-600 font-medium py-2 rounded-lg flex items-center justify-center hover:bg-gray-50 mb-4"
+        >
+          <span className="text-lg font-bold mr-2">+</span> Create {type === 'job' ? 'Job Post' : 'Personal Thought'}
+        </button>
+      );
+    }
+
+    return (
+      <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col space-y-2 mb-4">
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder={`What's your ${type === 'job' ? 'Job Post' : 'Thought'}?`}
+          className="border p-2 rounded w-full"
+        />
+        <div className="flex gap-2 items-center">
+          <label className="flex items-center gap-1 cursor-pointer text-gray-600 hover:text-amber-600">
+            <Image className="w-5 h-5" /> Image
+            <input type="file" accept="image/*" className="hidden" onChange={(e) => setImageFile(e.target.files[0])}/>
+          </label>
+          <label className="flex items-center gap-1 cursor-pointer text-gray-600 hover:text-amber-600">
+            <Paperclip className="w-5 h-5" /> File
+            <input type="file" className="hidden" onChange={(e) => setDocFile(e.target.files[0])}/>
+          </label>
+          <button onClick={handleAddPost} className="ml-auto bg-amber-500 text-white px-3 py-1 rounded">Post</button>
+          <button onClick={() => setShowBox(false)} className="ml-2 bg-gray-300 px-3 py-1 rounded">Cancel</button>
+        </div>
+        {imageFile && <p className="text-sm text-gray-500">Image: {imageFile.name}</p>}
+        {docFile && <p className="text-sm text-gray-500">File: {docFile.name}</p>}
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Navigation */}
+      <nav className="bg-white/80 backdrop-blur-md fixed w-full top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold">C</span>
+              </div>
+              <span className="text-xl font-bold text-gray-900">CareGroove</span>
+            </div>
+            <div className="hidden md:flex space-x-8">
+              <button onClick={() => navigate("/main")} className="text-gray-700 hover:text-amber-600 cursor-pointer">Home</button>
+              <button onClick={() => goToSection("resources")} className="text-gray-700 hover:text-amber-600 cursor-pointer">Explore</button>
+              <button onClick={() => goToSection("community")} className="text-gray-700 hover:text-amber-600 cursor-pointer">Community</button>
+              <button onClick={() => goToSection("resources")} className="text-gray-700 hover:text-amber-600 cursor-pointer">Resources</button>
+              <button onClick={() => navigate("/mynetworks")} className="text-gray-700 hover:text-amber-600 cursor-pointer">My Networks</button>
+            </div>
+            <div className="flex items-center space-x-4 relative" ref={dropdownRef}>
+              <div className="relative">
+                <button className="p-2 rounded-full hover:bg-gray-100" onClick={() => navigate("/notifications")}>
+                  <Bell className="w-6 h-6 text-gray-700" />
+                  {notifications?.some(n => n.unread) && (
+                    <span className="absolute top-0 right-0 block h-3 w-3 rounded-full bg-red-500 ring-1 ring-white"></span>
+                  )}
+                </button>
+              </div>
+              <div className="relative">
+                <button className="p-1 rounded-full hover:bg-gray-100 border border-gray-200" onClick={() => setShowDropdown(!showDropdown)}>
+                  <img src={profilePic || "https://via.placeholder.com/40"} alt="Profile" className="w-8 h-8 rounded-full object-cover"/>
+                </button>
+                {showDropdown && (
+                  <div className="absolute right-0 mt-2 w-40 bg-white border rounded-lg shadow-lg py-2 z-50">
+                    <button onClick={() => { setShowDropdown(false); navigate("/profile"); }} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100">View Profile</button>
+                    <button onClick={() => { setShowDropdown(false); handleLogout(); }} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100">Logout</button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-          <div className="highlight-card">
-            <div className="highlight-icon icon-purple">🤝</div>
-            <h3 className="highlight-title">Co-Parenting Support Network</h3>
-            <p className="highlight-description">Dedicated to fostering healthy co-parenting relationships and providing helpful resources to understand and deal with divorce, legal regulations, and stress.</p>
-            <div className="highlight-meta">
-              <span className="highlight-tag">Sarah</span>
-              <span className="highlight-tag">Level 2</span>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-28">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-24">
+              <div className="flex flex-col items-center">
+                {/* Profile Picture */}
+                <div className="relative w-24 h-24 mb-4">
+                  <img src={profilePic || "https://via.placeholder.com/150"} alt="Profile" className="w-24 h-24 rounded-full object-cover" />
+                  {isEditing && (
+                    <label className="absolute bottom-0 right-0 w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-amber-600">
+                      <span className="text-white text-lg font-bold">+</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                        const file = e.target.files[0];
+                        if(file){
+                          setProfileFile(file);
+                          const reader = new FileReader();
+                          reader.onload = () => setProfilePic(reader.result);
+                          reader.readAsDataURL(file);
+                        }
+                      }}/>
+                    </label>
+                  )}
+                </div>
+
+                <h2 className="text-2xl font-bold text-amber-700">{user.name}</h2>
+
+                {/* Location */}
+                <div className="flex items-center mt-2 justify-center text-gray-600 text-sm">
+                  {isEditing ? (
+                    <>
+                      <MapPin className="w-4 h-4 mr-1" />
+                      <input type="text" placeholder="Enter location" value={location} onChange={(e) => setLocation(e.target.value)} className="border p-1 rounded w-48 text-sm text-center"/>
+                    </>
+                  ) : (
+                    <span className="flex items-center justify-center text-gray-800 w-48"><MapPin className="w-4 h-4 mr-1" /> {location || "No location set"}</span>
+                  )}
+                </div>
+
+                {/* Bio */}
+                <div className="mt-2 flex items-start w-full px-4">
+                  <div className="mr-2 mt-1"><FileText className="w-5 h-5 text-gray-500"/></div>
+                  <div className="flex-1">
+                    {isEditing ? (
+                      <textarea placeholder="Enter bio" value={bio} onChange={(e) => setBio(e.target.value)} className="border p-1 rounded w-full text-sm"/>
+                    ) : (
+                      <p className="text-gray-800">{bio || "No bio added"}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Interests */}
+                <div className="mt-4 w-full px-4">
+                  <h3 className="flex items-center gap-2 text-base font-serif text-black mb-2">
+                    <Target className="w-4 h-4 text-black" /> Interests
+                  </h3>
+                  {isEditing ? (
+                    <select multiple value={interests} onChange={(e) => {
+                      const selected = Array.from(e.target.selectedOptions, option => option.value);
+                      setInterests(selected);
+                    }} className="border p-2 rounded w-full text-sm h-32">
+                      {interestOptions.map((interest, idx) => (<option key={idx} value={interest}>{interest}</option>))}
+                    </select>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {interests.length > 0 ? (
+                        interests.map((interest, idx) => (<span key={idx} className="px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-sm font-medium">{interest}</span>))
+                      ) : (
+                        <p className="text-gray-500 text-sm italic">No interests added</p>
+                      )}
+                    </div>
+                  )}
+                  {isEditing && (<p className="text-xs text-gray-500 mt-1">Hold <b>Ctrl</b> (Windows) or <b>Cmd</b> (Mac) to select multiple.</p>)}
+                </div>
+
+                {/* Buttons */}
+                {isEditing ? (
+                  <div className="mt-4 flex space-x-2">
+                    <button onClick={handleProfileUpdate} className="bg-amber-500 text-white px-4 py-2 rounded">Save Changes</button>
+                    <button onClick={() => setIsEditing(false)} className="bg-gray-300 text-gray-700 px-4 py-2 rounded">Cancel</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setIsEditing(true)} className="mt-4 bg-amber-500 text-white px-4 py-2 rounded">Edit Profile</button>
+                )}
+              </div>
             </div>
           </div>
-          <div className="highlight-card">
-            <div className="highlight-icon icon-orange">🎒</div>
-            <h3 className="highlight-title">Local Family Adventures</h3>
-            <p className="highlight-description">Organize family-friendly outings and activities to help new families explore their community with children.</p>
+
+          {/* Right Content */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-lg shadow-sm mb-6">
+              <div className="flex border-b border-gray-200">
+                <button onClick={() => setActiveTab('posts')} className={`flex-1 px-6 py-4 text-center font-medium ${activeTab === 'posts' ? 'text-amber-600 border-b-2 border-amber-600' : 'text-gray-600'}`}>
+                  <Users className="w-5 h-5 inline mr-2" /> Job Posts
+                </button>
+                <button onClick={() => setActiveTab('thoughts')} className={`flex-1 px-6 py-4 text-center font-medium ${activeTab === 'thoughts' ? 'text-amber-600 border-b-2 border-amber-600' : 'text-gray-600'}`}>
+                  <MessageSquare className="w-5 h-5 inline mr-2" /> Personal Thoughts
+                </button>
+              </div>
+
+              {/* Persistent Create Post Flow */}
+              <CreatePostFlow type={activeTab === 'posts' ? 'job' : 'thought'} />
+
+              {/* Posts / Thoughts Display */}
+              <div className="space-y-4">
+                {activeTab === 'posts'
+                  ? posts.map((post) => (
+                      <div key={post.id} className="bg-white rounded-lg shadow-sm p-6">
+                        {/* Header: Profile + Name */}
+                        <div className="flex items-center mb-3">
+                          <img
+                            src={profilePic || 'https://via.placeholder.com/40'}
+                            alt="Profile"
+                            className="w-10 h-10 rounded-full object-cover mr-3"
+                          />
+                          <div>
+                            <h3 className="text-gray-900 font-semibold">{user.name}</h3>
+                            <p className="text-xs text-gray-500">Job Post</p>
+                          </div>
+                        </div>
+
+                        {post.content && <p className="text-gray-700 mb-2">{post.content}</p>}
+                        {post.image && (
+                          <img
+                            src={post.image}
+                            alt="post"
+                            className="mt-2 max-h-64 w-full object-cover rounded"
+                          />
+                        )}
+                        {post.doc && (
+                          <p className="mt-2 text-gray-500 flex items-center">
+                            <Paperclip className="w-4 h-4 mr-1" /> {post.doc}
+                          </p>
+                        )}
+
+                        {/* Bottom: Like & Share */}
+                        <div className="flex items-center gap-6 mt-4 border-t pt-2">
+                          <button className="flex items-center text-gray-600 hover:text-amber-600">
+                            ❤️ Like
+                          </button>
+                          <button className="flex items-center text-gray-600 hover:text-amber-600">
+                            🔗 Share
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  : thoughts.map((thought) => (
+                      <div key={thought.id} className="bg-white rounded-lg shadow-sm p-6">
+                        {/* Header: Profile + Name */}
+                        <div className="flex items-center mb-3">
+                          <img
+                            src={profilePic || 'https://via.placeholder.com/40'}
+                            alt="Profile"
+                            className="w-10 h-10 rounded-full object-cover mr-3"
+                          />
+                          <div>
+                            <h3 className="text-gray-900 font-semibold">{user.name}</h3>
+                            <p className="text-xs text-gray-500">Personal Thought</p>
+                          </div>
+                        </div>
+
+                        {thought.content && <p className="text-gray-700 mb-2">{thought.content}</p>}
+                        {thought.image && (
+                          <img
+                            src={thought.image}
+                            alt="thought"
+                            className="mt-2 max-h-64 w-full object-cover rounded"
+                          />
+                        )}
+                        {thought.doc && (
+                          <p className="mt-2 text-gray-500 flex items-center">
+                            <Paperclip className="w-4 h-4 mr-1" /> {thought.doc}
+                          </p>
+                        )}
+
+                        {/* Bottom: Like & Share */}
+                        <div className="flex items-center gap-6 mt-4 border-t pt-2">
+                          <button className="flex items-center text-gray-600 hover:text-amber-600">
+                            ❤️ Like
+                          </button>
+                          <button className="flex items-center text-gray-600 hover:text-amber-600">
+                            🔗 Share
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+              </div>
+            </div>
           </div>
         </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="footer">
-        <div className="footer-links">
-          <a href="#">Product</a>
-          <a href="#">Resources</a>
-          <a href="#">Company</a>
-        </div>
-        <div className="social-icons">
-          <a href="#" className="social-icon">📘</a>
-          <a href="#" className="social-icon">🐦</a>
-          <a href="#" className="social-icon">📷</a>
-          <a href="#" className="social-icon">💼</a>
-        </div>
-      </footer>
+      </div>
     </div>
   );
-};
-
-export default Profile;
+}

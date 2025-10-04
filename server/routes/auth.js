@@ -10,7 +10,7 @@ const router = express.Router();
 // @desc    Register new user
 // =============================
 router.post("/register", async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, interests } = req.body;
 
   try {
     console.log("Register request received:", req.body);
@@ -27,11 +27,22 @@ router.post("/register", async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // ✅ parse interests if it comes as stringified JSON
+    let parsedInterests = [];
+    if (interests) {
+      try {
+        parsedInterests = JSON.parse(interests);
+      } catch (err) {
+        parsedInterests = []; // fallback if it's not valid JSON
+      }
+    }
+
     // create new user
     const newUser = new User({
       name,
       email,
       password: hashedPassword,
+      interests: parsedInterests, // store as array
     });
 
     await newUser.save();
@@ -48,6 +59,7 @@ router.post("/register", async (req, res) => {
         id: newUser._id,
         email: newUser.email,
         name: newUser.name,
+        interests: newUser.interests,
       },
       msg: "User registered successfully",
     });
@@ -94,6 +106,7 @@ router.post("/login", async (req, res) => {
         id: user._id,
         email: user.email,
         name: user.name,
+        interests: user.interests || [],
       },
     });
   } catch (err) {

@@ -1,53 +1,41 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Lightbulb, Heart, Home, Users, MapPin, MessageCircle, Handshake,Bell } from 'lucide-react';
+import { User, Lightbulb, Heart, Home, Bell, Handshake } from 'lucide-react';
 import mainimage from "../assets/hero_section.webp";
 import e1 from "../assets/E1.jpg";
-import e3 from "../assets/E3.jpg";
 import e2 from "../assets/E2.png";
+import e3 from "../assets/E3.jpg";
 import e4 from "../assets/E4.png";
 import { useNavigate } from "react-router-dom";
-const MainPage = () => {
-  const [currentSection, setCurrentSection] = useState(0);
 
-  const sections = [
-    'hero',
-    'resources',
-    'community',
-    'profiles',
-    'stories',
-    'testimonials'
-  ];
+const MainPage = ({ notifications, setNotifications }) => {
+  const [currentSection, setCurrentSection] = useState(0);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+  const navigate = useNavigate();
+
+  const sections = ['hero', 'resources', 'community', 'profiles', 'stories', 'testimonials'];
 
   const scrollToSection = (index) => {
     setCurrentSection(index);
     const element = document.getElementById(sections[index]);
     element?.scrollIntoView({ behavior: 'smooth' });
   };
-  const [showDropdown, setShowDropdown] = useState(false);
-    const navigate = useNavigate();
-    const dropdownRef = useRef(null);
 
-    const handleLogout = () => {
-      console.log("Logging out..."); 
-      // ✅ Clear tokens/session if needed
-      localStorage.removeItem("userToken"); // optional
+  const handleLogout = () => {
+    localStorage.removeItem("userToken");
+    navigate("/");
+  };
 
-      // 🔹 Redirect to homepage
-      navigate("/");
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
     };
-
-
-      // close dropdown when clicking outside
-    useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-          setShowDropdown(false);
-        }
-      };
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -55,67 +43,75 @@ const MainPage = () => {
       <nav className="bg-white/80 backdrop-blur-md fixed w-full top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
+            {/* Logo */}
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full flex items-center justify-center">
                 <Heart className="w-4 h-4 text-white" />
               </div>
               <span className="text-xl font-bold text-gray-900">CareGroove</span>
             </div>
-           
+
+            {/* Menu */}
             <div className="hidden md:flex space-x-8">
               <button onClick={() => scrollToSection(0)} className="text-gray-700 hover:text-amber-600 transition-colors">Home</button>
               <button onClick={() => scrollToSection(1)} className="text-gray-700 hover:text-amber-600 transition-colors">Explore</button>
               <button onClick={() => scrollToSection(2)} className="text-gray-700 hover:text-amber-600 transition-colors">Community</button>
               <button onClick={() => scrollToSection(3)} className="text-gray-700 hover:text-amber-600 transition-colors">Resources</button>
               <button className="text-gray-700 hover:text-amber-600 transition-colors">My Networks</button>
-              {/* ✅ Changed About Us to scroll to footer */}
               <button onClick={() => {
                 const element = document.getElementById('footer');
                 element?.scrollIntoView({ behavior: 'smooth' });
               }} className="text-gray-700 hover:text-amber-600 transition-colors">About Us</button>
             </div>
-           
-          {/* Profile + Notification */}
-          <div className="flex items-center space-x-4 relative" ref={dropdownRef}>
-            {/* Notification Bell */}
-            <button className="p-2 rounded-full hover:bg-gray-100 transition">
-              <Bell className="w-6 h-6 text-gray-700" />
-            </button>
 
-          {/* Profile Icon with Dropdown */}
-          <div className="relative">
-            <button
-              className="p-2 rounded-full hover:bg-gray-100 transition"
-              onClick={() => setShowDropdown(!showDropdown)}
-            >
-              <User className="w-6 h-6 text-gray-700" />
-            </button>
+            {/* Notification + Profile */}
+            <div className="flex items-center space-x-4 relative" ref={dropdownRef}>
+              {/* Notification Bell with Red Dot */}
+              <div className="relative">
+                <button
+                  className="p-2 rounded-full hover:bg-gray-100 transition"
+                  onClick={() => navigate("/notifications")}
+                >
+                  <Bell className="w-6 h-6 text-gray-700" />
+                  {notifications?.some(n => n.unread) && (
+                    <span className="absolute top-0 right-0 block h-3 w-3 rounded-full bg-red-500 ring-1 ring-white a\"></span>
+                  )}
+                </button>
+              </div>
 
-          {showDropdown && (
-            <div className="absolute right-0 mt-2 w-40 bg-white border rounded-lg shadow-lg py-2 z-50">
-              <button
-                onClick={() => {
-                  setShowDropdown(false);
-                  navigate("/profile");
-                }}
-                className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
-              >
-                View Profile
-              </button>
-              <button
-                onClick={() => {
-                  setShowDropdown(false);
-                  handleLogout();
-                }}
-                className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
-              >
-                Logout
-              </button>
+              {/* Profile Icon with Dropdown */}
+              <div className="relative">
+                <button
+                  className="p-2 rounded-full hover:bg-gray-100 transition"
+                  onClick={() => setShowDropdown(!showDropdown)}
+                >
+                  <User className="w-6 h-6 text-gray-700" />
+                </button>
+
+                {showDropdown && (
+                  <div className="absolute right-0 mt-2 w-40 bg-white border rounded-lg shadow-lg py-2 z-50">
+                    <button
+                      onClick={() => {
+                        setShowDropdown(false);
+                        navigate("/profile");
+                      }}
+                      className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
+                    >
+                      View Profile
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowDropdown(false);
+                        handleLogout();
+                      }}
+                      className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-        </div>
-      </div>
-
           </div>
         </div>
       </nav>
@@ -135,7 +131,7 @@ const MainPage = () => {
                 Join Our Community
               </button>
             </div>
-           
+
             <div className="relative">
               <div className="bg-gradient-to-br from-amber-100 to-orange-100 rounded-3xl p-8 shadow-2xl">
                 <img
