@@ -156,53 +156,73 @@ const MainPage = ({ notifications, setNotifications }) => {
             <p className="text-xl text-gray-600">Discover a variety of resources designed to support single parents.</p>
           </div>
          
-          {/* First row (3 items) */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
-            <div className="text-center p-8 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 hover:shadow-xl transition-all hover:-translate-y-2">
-              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <User className="w-8 h-8 text-amber-600" />
+          {/* First row */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+              {/* GrowTalks */}
+              <div 
+                onClick={() => navigate("/groovetalks")}
+                className="cursor-pointer text-center p-8 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 hover:shadow-xl transition-all hover:-translate-y-2"
+              >
+                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <User className="w-8 h-8 text-amber-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">GrowTalks</h3>
+                <p className="text-gray-600">Join live hangouts and gain insight to make your day.</p>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">GrowTalks</h3>
-              <p className="text-gray-600">Join live hangouts and gain insight to make your day.</p>
-            </div>
-           
-            <div className="text-center p-8 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 hover:shadow-xl transition-all hover:-translate-y-2">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Lightbulb className="w-8 h-8 text-blue-600" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">JobHive</h3>
-              <p className="text-gray-600">Empowering single parents with new job opportunities.</p>
-            </div>
-           
-            <div className="text-center p-8 rounded-2xl bg-gradient-to-br from-purple-50 to-pink-50 hover:shadow-xl transition-all hover:-translate-y-2">
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Handshake className="w-8 h-8 text-purple-600" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Hug & Hand</h3>
-              <p className="text-gray-600">A helping hand to lean on every single parent's need.</p>
-            </div>
-          </div>
 
-          {/* Second row (FundNest & KidCare centered, same size as first row cards) */}
+              {/* JobHive */}
+              <div 
+                onClick={() => navigate("/jobhive")}
+                className="cursor-pointer text-center p-8 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 hover:shadow-xl transition-all hover:-translate-y-2"
+              >
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Lightbulb className="w-8 h-8 text-blue-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">JobHive</h3>
+                <p className="text-gray-600">Empowering single parents with new job opportunities.</p>
+              </div>
+
+              {/* Hug & Hand */}
+              <div 
+                onClick={() => navigate("/hughand")}
+                className="cursor-pointer text-center p-8 rounded-2xl bg-gradient-to-br from-purple-50 to-pink-50 hover:shadow-xl transition-all hover:-translate-y-2"
+              >
+                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Handshake className="w-8 h-8 text-purple-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">Hug & Hand</h3>
+                <p className="text-gray-600">A helping hand to lean on every single parent's need.</p>
+              </div>
+            </div>
+
+            {/* Second row */}
             <div className="flex justify-center gap-8">
-            <div className="w-full md:w-1/2 lg:w-1/3 text-center p-8 rounded-2xl bg-gradient-to-br from-green-50 to-teal-50 hover:shadow-xl transition-all hover:-translate-y-2">
+              {/* FundNest */}
+              <div 
+                onClick={() => navigate("/fundnest")}
+                className="cursor-pointer w-full md:w-1/2 lg:w-1/3 text-center p-8 rounded-2xl bg-gradient-to-br from-green-50 to-teal-50 hover:shadow-xl transition-all hover:-translate-y-2"
+              >
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Home className="w-8 h-8 text-green-600" />
+                  <Home className="w-8 h-8 text-green-600" />
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">FundNest</h3>
                 <p className="text-gray-600">Find financial help for your family and children.</p>
-            </div>
-            
-            <div className="w-full md:w-1/2 lg:w-1/3 text-center p-8 rounded-2xl bg-gradient-to-br from-rose-50 to-pink-50 hover:shadow-xl transition-all hover:-translate-y-2">
+              </div>
+
+              {/* DayCare */}
+              <div 
+                onClick={() => navigate("/daycare")}
+                className="cursor-pointer w-full md:w-1/2 lg:w-1/3 text-center p-8 rounded-2xl bg-gradient-to-br from-rose-50 to-pink-50 hover:shadow-xl transition-all hover:-translate-y-2"
+              >
                 <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Heart className="w-8 h-8 text-rose-600" />
+                  <Heart className="w-8 h-8 text-rose-600" />
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">DayCare</h3>
                 <p className="text-gray-600">Trusted care for your little ones so you can focus.</p>
+              </div>
             </div>
-            </div>
-        </div>
-      </section>
+          </div>
+        </section>
 
       {/* Community Forum Section */}
       <section id="community" className="py-20 bg-gradient-to-br from-amber-100 via-orange-50 to-amber-50">
