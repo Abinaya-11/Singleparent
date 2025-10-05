@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
-const Post = require("../models/Post");
+const Post = require("../models/post");
 const { authMiddleware } = require("../middleware/authMiddleware");
 
 // Storage setup for images/files

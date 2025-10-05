@@ -149,84 +149,81 @@ const MainPage = ({ notifications, setNotifications }) => {
       </section>
 
       {/* Resources Section */}
-      <section id="resources" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Explore Our GrowConnect</h2>
-            <p className="text-xl text-gray-600">Discover a variety of resources designed to support single parents.</p>
-          </div>
-         
-          {/* First row (3 items) */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
-            <div className="text-center p-8 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 hover:shadow-xl transition-all hover:-translate-y-2">
-              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <User className="w-8 h-8 text-amber-600" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">GrowTalks</h3>
-              <p className="text-gray-600">Join live hangouts and gain insight to make your day.</p>
+        <section id="resources" className="py-20 bg-white">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-bold text-gray-900 mb-4">Explore Our GrowConnect</h2>
+              <p className="text-xl text-gray-600">Discover a variety of resources designed to support single parents.</p>
             </div>
-           
-            <div className="text-center p-8 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 hover:shadow-xl transition-all hover:-translate-y-2">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Lightbulb className="w-8 h-8 text-blue-600" />
+            
+            {/* First row */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+              {/* GrowTalks */}
+              <div 
+                onClick={() => navigate("/groovetalks")}
+                className="cursor-pointer text-center p-8 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 hover:shadow-xl transition-all hover:-translate-y-2"
+              >
+                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <User className="w-8 h-8 text-amber-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">GrowTalks</h3>
+                <p className="text-gray-600">Join live hangouts and gain insight to make your day.</p>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">JobHive</h3>
-              <p className="text-gray-600">Empowering single parents with new job opportunities.</p>
-            </div>
-           
-            <div className="text-center p-8 rounded-2xl bg-gradient-to-br from-purple-50 to-pink-50 hover:shadow-xl transition-all hover:-translate-y-2">
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Handshake className="w-8 h-8 text-purple-600" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Hug & Hand</h3>
-              <p className="text-gray-600">A helping hand to lean on every single parent's need.</p>
-            </div>
-          </div>
 
-          {/* Second row (FundNest & KidCare centered, same size as first row cards) */}
+              {/* JobHive */}
+              <div 
+                onClick={() => navigate("/jobhive")}
+                className="cursor-pointer text-center p-8 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 hover:shadow-xl transition-all hover:-translate-y-2"
+              >
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Lightbulb className="w-8 h-8 text-blue-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">JobHive</h3>
+                <p className="text-gray-600">Empowering single parents with new job opportunities.</p>
+              </div>
+
+              {/* Hug & Hand */}
+              <div 
+                onClick={() => navigate("/hughand")}
+                className="cursor-pointer text-center p-8 rounded-2xl bg-gradient-to-br from-purple-50 to-pink-50 hover:shadow-xl transition-all hover:-translate-y-2"
+              >
+                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Handshake className="w-8 h-8 text-purple-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">Hug & Hand</h3>
+                <p className="text-gray-600">A helping hand to lean on every single parent's need.</p>
+              </div>
+            </div>
+
+            {/* Second row */}
             <div className="flex justify-center gap-8">
-            <div className="w-full md:w-1/2 lg:w-1/3 text-center p-8 rounded-2xl bg-gradient-to-br from-green-50 to-teal-50 hover:shadow-xl transition-all hover:-translate-y-2">
+              {/* FundNest */}
+              <div 
+                onClick={() => navigate("/fundnest")}
+                className="cursor-pointer w-full md:w-1/2 lg:w-1/3 text-center p-8 rounded-2xl bg-gradient-to-br from-green-50 to-teal-50 hover:shadow-xl transition-all hover:-translate-y-2"
+              >
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Home className="w-8 h-8 text-green-600" />
+                  <Home className="w-8 h-8 text-green-600" />
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">FundNest</h3>
                 <p className="text-gray-600">Find financial help for your family and children.</p>
-            </div>
-            
-            <div className="w-full md:w-1/2 lg:w-1/3 text-center p-8 rounded-2xl bg-gradient-to-br from-rose-50 to-pink-50 hover:shadow-xl transition-all hover:-translate-y-2">
+              </div>
+
+              {/* DayCare */}
+              <div 
+                onClick={() => navigate("/daycare")}
+                className="cursor-pointer w-full md:w-1/2 lg:w-1/3 text-center p-8 rounded-2xl bg-gradient-to-br from-rose-50 to-pink-50 hover:shadow-xl transition-all hover:-translate-y-2"
+              >
                 <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Heart className="w-8 h-8 text-rose-600" />
+                  <Heart className="w-8 h-8 text-rose-600" />
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">DayCare</h3>
                 <p className="text-gray-600">Trusted care for your little ones so you can focus.</p>
-            </div>
-            </div>
-        </div>
-      </section>
-
-      {/* Community Forum Section */}
-      <section id="community" className="py-20 bg-gradient-to-br from-amber-100 via-orange-50 to-amber-50">
-        <div className="max-w-4xl mx-auto text-center px-4">
-          <h2 className="text-4xl font-bold text-gray-900 mb-6">Join Our Community Forum</h2>
-          <p className="text-xl text-gray-700 mb-8 leading-relaxed">
-            Where strength meets community, and every journey is celebrated. Connect with parents who understand, share experiences, and grow stronger together.
-          </p>
-         
-          <div className="flex justify-center mb-8">
-            <div className="flex -space-x-4">
-              <img src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=80&h=80&fit=crop&crop=face" className="w-16 h-16 rounded-full border-4 border-white shadow-lg" alt="Community member" />
-              <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face" className="w-16 h-16 rounded-full border-4 border-white shadow-lg" alt="Community member" />
-              <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&crop=face" className="w-16 h-16 rounded-full border-4 border-white shadow-lg" alt="Community member" />
-              <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=face" className="w-16 h-16 rounded-full border-4 border-white shadow-lg" alt="Community member" />
-              <img src="https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=80&h=80&fit=crop&crop=face" className="w-16 h-16 rounded-full border-4 border-white shadow-lg" alt="Community member" />
+              </div>
             </div>
           </div>
-         
-          <button className="bg-white hover:bg-gray-50 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold transition-all hover:shadow-lg transform hover:-translate-y-1 border border-gray-200">
-            Get Started
-          </button>
-        </div>
-      </section>
+        </section>
+
 
       {/* Suggested Profiles Section */}
       <section id="profiles" className="py-20 bg-white">

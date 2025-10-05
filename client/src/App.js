@@ -6,7 +6,11 @@ import Register from "./pages/Register";
 import MainPage from "./pages/Main";
 import Profile from "./pages/Profile";
 import Notifications from "./pages/Notifications";
-
+import Groovetalks from "./pages/Groovetalks";
+import FundNest from "./pages/FundNest";
+import Hughand from "./pages/Hughand";
+import Jobhive from "./pages/Jobhive";
+import Daycare from "./pages/Daycare";
 function App() {
   // ✅ Shared notifications state
   const [notifications, setNotifications] = useState([
@@ -61,6 +65,11 @@ function App() {
           path="/notifications" 
           element={<Notifications notifications={notifications} setNotifications={setNotifications} />} 
         />
+        <Route path="/groovetalks" element={<Groovetalks />} />
+        <Route path="/fundnest" element={<FundNest />} />
+        <Route path="/hughand" element={<Hughand />} />
+        <Route path="/jobhive" element={<Jobhive />} />
+        <Route path="/daycare" element={<Daycare />} />
       </Routes>
     </Router>
   );
