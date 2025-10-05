@@ -7,7 +7,10 @@ import {
   Bell, 
   Target, 
   Paperclip, 
-  Image 
+  Image ,
+  Trash2,
+  Heart,
+  Share
 } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -28,6 +31,8 @@ export default function GrowConnectProfile({ notifications, setNotifications }) 
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
+  const API_URL = process.env.REACT_APP_API_URL || ""; // Add your backend URL here
+
   const interestOptions = ["UI/UX Design", "Product Management", "Storytelling", "Prototyping", "Communication", "Figma"];
 
   const handleLogout = () => {
@@ -35,22 +40,23 @@ export default function GrowConnectProfile({ notifications, setNotifications }) 
     navigate("/login");
   };
 
-  // Fetch profile
+  // Fetch profile & posts
   useEffect(() => {
     const token = localStorage.getItem("userToken");
     if (!token) {
       navigate("/login");
       return;
     }
-    const fetchProfile = async () => {
+
+    const fetchData = async () => {
       try {
-        const res = await axios.get("/api/user/profile", {
+        const profileRes = await axios.get("/api/user/profile", {
           headers: { Authorization: `Bearer ${token}` }
         });
-        const u = res.data.user;
+        const u = profileRes.data.user;
 
         setUser(u);
-        setProfilePic(u.profilePic ? `/${u.profilePic}` : '');
+        setProfilePic(u.profilePic ? `${API_URL}/${u.profilePic}` : '');
         setLocation(u.location || '');
         setBio(u.bio || '');
 
@@ -60,30 +66,30 @@ export default function GrowConnectProfile({ notifications, setNotifications }) 
         } else if (typeof u.interests === 'string') {
           try {
             parsedInterests = JSON.parse(u.interests || "[]");
-            if (!Array.isArray(parsedInterests)) {
-              parsedInterests = parsedInterests ? [parsedInterests] : [];
-            }
+            if (!Array.isArray(parsedInterests)) parsedInterests = parsedInterests ? [parsedInterests] : [];
           } catch (e) {
             parsedInterests = u.interests ? [u.interests] : [];
           }
-        } else {
-          parsedInterests = [];
         }
         setInterests(parsedInterests);
 
-        // Fetch user's posts and thoughts if available
-        setPosts(res.data.user.posts || []);
-        setThoughts(res.data.user.thoughts || []);
+        const postsRes = await axios.get("/api/posts/my-posts", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const allPosts = postsRes.data.posts || [];
+        setPosts(allPosts.filter((p) => p.type === "job"));
+        setThoughts(allPosts.filter((p) => p.type === "thought"));
 
         setLoading(false);
       } catch (err) {
-        console.error("Profile fetch error:", err);
+        console.error("Profile or posts fetch error:", err);
         localStorage.removeItem("userToken");
         navigate("/login");
       }
     };
-    fetchProfile();
-  }, [navigate]);
+
+    fetchData();
+  }, [navigate, API_URL]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -96,25 +102,22 @@ export default function GrowConnectProfile({ notifications, setNotifications }) 
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Handle profile update with FormData
+  // Update profile
   const handleProfileUpdate = async () => {
     try {
       const token = localStorage.getItem("userToken");
       const formData = new FormData();
-
       if (profileFile) formData.append("profilePic", profileFile);
       formData.append("location", location);
       formData.append("bio", bio);
       formData.append("interests", JSON.stringify(interests));
 
       const res = await axios.put("/api/user/profile", formData, {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data"
-        }
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" }
       });
 
       setUser(res.data.user);
+      setProfilePic(res.data.user.profilePic ? `${API_URL}/${res.data.user.profilePic}` : '');
       setIsEditing(false);
       alert("Profile updated successfully!");
     } catch (err) {
@@ -122,47 +125,82 @@ export default function GrowConnectProfile({ notifications, setNotifications }) 
       alert("Failed to update profile");
     }
   };
+  const handleDeletePost = async (id, type) => {
+  if (!window.confirm("Are you sure you want to delete this post?")) return;
+
+  try {
+    const token = localStorage.getItem("userToken");
+    const res = await axios.delete(`/api/posts/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    console.log("🗑 Delete success:", res.data);
+    console.log("Deleting type:", type, "with ID:", id);
+
+    if (type === "job") {
+      setPosts((prev) => prev.filter((p) => p._id !== id));
+    } 
+    else {
+      console.warn("Unknown type:", type);
+    }
+    if (type === "thought") {
+      setThoughts((prev) => prev.filter((t) => t._id !== id));
+    } else {
+      console.warn("Unknown type:", type);
+    }
+
+    alert("Post deleted successfully!");
+  } catch (err) {
+    console.error("Delete error:", err);
+    alert("Failed to delete post");
+  }
+};
+
+
 
   if (loading) return <div className="p-6">Loading profile...</div>;
   if (!user) return <div className="p-6">No profile found</div>;
 
-  const goToSection = (sectionId) => {
-    navigate("/main", { state: { scrollTo: sectionId } });
-  };
+  const goToSection = (sectionId) => navigate("/main", { state: { scrollTo: sectionId } });
 
-  // Component for Create Post flow (button → box → post → back to button)
+  // Create Post component
   const CreatePostFlow = ({ type }) => {
     const [showBox, setShowBox] = useState(false);
     const [content, setContent] = useState('');
     const [imageFile, setImageFile] = useState(null);
     const [docFile, setDocFile] = useState(null);
 
-    const handleAddPost = () => {
+    const handleAddPost = async () => {
       if (!content.trim() && !imageFile && !docFile) return;
 
-      const newPost = {
-        id: Date.now(),
-        content,
-        image: imageFile ? URL.createObjectURL(imageFile) : null,
-        doc: docFile ? docFile.name : null,
-        type
-      };
+      const token = localStorage.getItem("userToken");
+      const formData = new FormData();
+      formData.append("content", content);
+      formData.append("type", type);
+      if (imageFile) formData.append("image", imageFile);
+      if (docFile) formData.append("doc", docFile);
 
-      if (type === 'job') setPosts(prev => [newPost, ...prev]);
-      else setThoughts(prev => [newPost, ...prev]);
+      try {
+        const res = await axios.post("/api/posts", formData, {
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
+        });
+        const newPost = res.data.post;
+        newPost.image = newPost.image ? `${API_URL}/${newPost.image}` : null;
+        newPost.doc = newPost.doc ? `${API_URL}/${newPost.doc}` : null;
 
-      setContent('');
-      setImageFile(null);
-      setDocFile(null);
-      setShowBox(false); // Back to button after posting
+        if (type === "job") setPosts((prev) => [newPost, ...prev]);
+        else setThoughts((prev) => [newPost, ...prev]);
+
+        setContent(''); setImageFile(null); setDocFile(null); setShowBox(false);
+      } catch (err) {
+        console.error(err);
+        alert("Error creating post");
+      }
     };
-
+    
     if (!showBox) {
       return (
-        <button
-          onClick={() => setShowBox(true)}
-          className="w-full bg-white border-dashed border-2 border-gray-300 text-amber-600 font-medium py-2 rounded-lg flex items-center justify-center hover:bg-gray-50 mb-4"
-        >
+        <button onClick={() => setShowBox(true)} className="w-full bg-white border-dashed border-2 border-gray-300 text-amber-600 font-medium py-2 rounded-lg flex items-center justify-center hover:bg-gray-50 mb-4">
           <span className="text-lg font-bold mr-2">+</span> Create {type === 'job' ? 'Job Post' : 'Personal Thought'}
         </button>
       );
@@ -170,12 +208,7 @@ export default function GrowConnectProfile({ notifications, setNotifications }) 
 
     return (
       <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col space-y-2 mb-4">
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder={`What's your ${type === 'job' ? 'Job Post' : 'Thought'}?`}
-          className="border p-2 rounded w-full"
-        />
+        <textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder={`What's your ${type === 'job' ? 'Job Post' : 'Thought'}?`} className="border p-2 rounded w-full"/>
         <div className="flex gap-2 items-center">
           <label className="flex items-center gap-1 cursor-pointer text-gray-600 hover:text-amber-600">
             <Image className="w-5 h-5" /> Image
@@ -194,15 +227,18 @@ export default function GrowConnectProfile({ notifications, setNotifications }) 
     );
   };
 
+  // Function to render post/thought images/docs with backend URL
+  const getFileUrl = (path) => path ? `${API_URL}/${path}` : null;
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
+      {/* Navigation + Left Sidebar + Right Content remain same */}
       <nav className="bg-white/80 backdrop-blur-md fixed w-full top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold">C</span>
+                <Heart className="w-4 h-4 text-white" />
               </div>
               <span className="text-xl font-bold text-gray-900">CareGroove</span>
             </div>
@@ -243,9 +279,9 @@ export default function GrowConnectProfile({ notifications, setNotifications }) 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-24">
+            <div className="bg-orange-200 rounded-lg shadow-sm p-6 sticky top-24">
               <div className="flex flex-col items-center">
-                {/* Profile Picture */}
+                {/* Profile Picture & Edit */}
                 <div className="relative w-24 h-24 mb-4">
                   <img src={profilePic || "https://via.placeholder.com/150"} alt="Profile" className="w-24 h-24 rounded-full object-cover" />
                   {isEditing && (
@@ -274,26 +310,26 @@ export default function GrowConnectProfile({ notifications, setNotifications }) 
                       <input type="text" placeholder="Enter location" value={location} onChange={(e) => setLocation(e.target.value)} className="border p-1 rounded w-48 text-sm text-center"/>
                     </>
                   ) : (
-                    <span className="flex items-center justify-center text-gray-800 w-48"><MapPin className="w-4 h-4 mr-1" /> {location || "No location set"}</span>
+                    <span className="flex items-center justify-center font-serif  text-gray-800 w-48"><MapPin className="w-4 h-4 mr-1" /> {location || "No location set"}</span>
                   )}
                 </div>
 
                 {/* Bio */}
                 <div className="mt-2 flex items-start w-full px-4">
-                  <div className="mr-2 mt-1"><FileText className="w-5 h-5 text-gray-500"/></div>
+                  <div className="mr-2 mt-1"><FileText className="w-5 h-5 font-serif text-gray-800"/></div>
                   <div className="flex-1">
                     {isEditing ? (
                       <textarea placeholder="Enter bio" value={bio} onChange={(e) => setBio(e.target.value)} className="border p-1 rounded w-full text-sm"/>
                     ) : (
-                      <p className="text-gray-800">{bio || "No bio added"}</p>
+                      <p className="font-serif text-gray-800">{bio || "No bio added"}</p>
                     )}
                   </div>
                 </div>
 
                 {/* Interests */}
                 <div className="mt-4 w-full px-4">
-                  <h3 className="flex items-center gap-2 text-base font-serif text-black mb-2">
-                    <Target className="w-4 h-4 text-black" /> Interests
+                  <h3 className="flex items-center gap-2 text-base font-serif text-gray-800 mb-2">
+                    <Target className="w-4 h-4 text-gray-800" /> Interests
                   </h3>
                   {isEditing ? (
                     <select multiple value={interests} onChange={(e) => {
@@ -376,13 +412,21 @@ export default function GrowConnectProfile({ notifications, setNotifications }) 
 
                         {/* Bottom: Like & Share */}
                         <div className="flex items-center gap-6 mt-4 border-t pt-2">
-                          <button className="flex items-center text-gray-600 hover:text-amber-600">
-                            ❤️ Like
+                          <button className="flex items-center gap-1 text-gray-600 hover:text-amber-600">
+                            <Heart className="w-4 h-4" /> Like
                           </button>
-                          <button className="flex items-center text-gray-600 hover:text-amber-600">
-                            🔗 Share
+                          <button className="flex items-center gap-1 text-gray-600 hover:text-amber-600">
+                            <Share className="w-4 h-4" /> Share
                           </button>
+                          {/* 🆕 Delete Button */}
+                        <button
+                          onClick={() => handleDeletePost(post._id, "job")}
+                          className="flex items-center gap-1 text-gray-600 hover:text-amber-600"
+                        >
+                          <Trash2 className="w-4 h-4" /> Delete
+                        </button>
                         </div>
+                        
                       </div>
                     ))
                   : thoughts.map((thought) => (
@@ -416,20 +460,42 @@ export default function GrowConnectProfile({ notifications, setNotifications }) 
 
                         {/* Bottom: Like & Share */}
                         <div className="flex items-center gap-6 mt-4 border-t pt-2">
-                          <button className="flex items-center text-gray-600 hover:text-amber-600">
-                            ❤️ Like
+                          <button className="flex items-center gap-1 text-gray-600 hover:text-amber-600">
+                            <Heart className="w-4 h-4" /> Like
                           </button>
-                          <button className="flex items-center text-gray-600 hover:text-amber-600">
-                            🔗 Share
+                          <button className="flex items-center gap-1 text-gray-600 hover:text-amber-600">
+                          <Share className="w-4 h-4" /> Share
                           </button>
+                          {/* 🆕 Delete Button */}
+                        <button
+                          onClick={() => handleDeletePost(thought._id, "job")}
+                          className="flex items-center gap-1 text-gray-600 hover:text-amber-600"
+                        >
+                          <Trash2 className="w-4 h-4" /> Delete
+                        </button>
                         </div>
+                        
                       </div>
                     ))}
-              </div>
+      {/* For posts/thoughts images/docs use: */}
+      {posts.map((post) => (
+        <div key={post.id}>
+          {post.image && <img src={getFileUrl(post.image)} alt="post" className="rounded"/>}
+          {post.doc && <a href={getFileUrl(post.doc)} target="_blank" rel="noopener noreferrer">{post.doc}</a>}
+        </div>
+      ))}
+      {thoughts.map((thought) => (
+        <div key={thought.id}>
+          {thought.image && <img src={getFileUrl(thought.image)} alt="thought" className="rounded"/>}
+          {thought.doc && <a href={getFileUrl(thought.doc)} target="_blank" rel="noopener noreferrer">{thought.doc}</a>}
+        </div>
+      ))}
+    </div>
+     </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+
   );
 }

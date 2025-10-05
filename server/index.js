@@ -20,6 +20,10 @@ const app = express();
 // Parse JSON bodies
 app.use(express.json());
 
+// Parse form data (important for multipart forms)
+app.use(express.urlencoded({ extended: true }));
+
+
 // Parse cookies
 app.use(cookieParser());
 
