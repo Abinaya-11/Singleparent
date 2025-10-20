@@ -19,8 +19,52 @@ const postSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["job", "thought"],
+      enum: ["job", "thought", "hughand"],
       required: true,
+    },
+    // Job-specific fields
+    jobDetails: {
+      position: {
+        type: String,
+      },
+      company: {
+        type: String,
+      },
+      location: {
+        type: String,
+      },
+      jobType: {
+        type: String,
+        enum: ["Full-time", "Part-time", "Contract", "Freelance", "Internship", "Remote"],
+      },
+      jobDescription: {
+        type: String,
+      },
+      applicationDeadline: {
+        type: Date,
+      },
+      applicationLink: {
+        type: String,
+      },
+    },
+    // Hughand-specific fields
+    hughandDetails: {
+      title: {
+        type: String,
+      },
+      category: {
+        type: String,
+        enum: ["Baby Gear", "Books & Toys", "Clothing", "Baby Essentials", "Hobbies", "Other"],
+      },
+      contactEmail: {
+        type: String,
+      },
+      contactPhone: {
+        type: String,
+      },
+      address: {
+        type: String,
+      },
     },
     likes: {
       type: Number,

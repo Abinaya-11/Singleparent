@@ -11,6 +11,9 @@ import FundNest from "./pages/FundNest";
 import Hughand from "./pages/Hughand";
 import Jobhive from "./pages/Jobhive";
 import Daycare from "./pages/Daycare";
+import Community from "./pages/community";
+import Addcaregiver from "./pages/Addcaregivers";
+import MyNetwork from "./pages/MyNetwork";
 function App() {
   // ✅ Shared notifications state
   const [notifications, setNotifications] = useState([
@@ -60,16 +63,29 @@ function App() {
           path="/main" 
           element={<MainPage notifications={notifications} setNotifications={setNotifications} />} 
         />
-        <Route path="/profile" element={<Profile />} />
+        <Route 
+          path="/profile" 
+          element={<Profile notifications={notifications} setNotifications={setNotifications} />} 
+        />
+        <Route 
+          path="/profile/:userId" 
+          element={<Profile notifications={notifications} setNotifications={setNotifications} />} 
+        />
         <Route 
           path="/notifications" 
           element={<Notifications notifications={notifications} setNotifications={setNotifications} />} 
         />
         <Route path="/groovetalks" element={<Groovetalks />} />
         <Route path="/fundnest" element={<FundNest />} />
-        <Route path="/hughand" element={<Hughand />} />
+        <Route 
+          path="/hughand" 
+          element={<Hughand notifications={notifications} setNotifications={setNotifications} />} 
+        />
         <Route path="/jobhive" element={<Jobhive />} />
         <Route path="/daycare" element={<Daycare />} />
+        <Route path="/community" element={<Community />} />
+        <Route path="/addcaregiver" element={<Addcaregiver />}/>
+        <Route path="/mynetwork" element={<MyNetwork />}/>
       </Routes>
     </Router>
   );

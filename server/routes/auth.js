@@ -1,13 +1,13 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const User = require("../models/user"); // lowercase "u" to match filename
+const User = require("../models/user");
 
 const router = express.Router();
 
 // =============================
 // @route   POST /api/auth/register
-// @desc    Register new user
+// @desc    Register new user (auto role detect)
 // =============================
 router.post("/register", async (req, res) => {
   const { name, email, password, interests } = req.body;
@@ -23,17 +23,23 @@ router.post("/register", async (req, res) => {
         .json({ success: false, msg: "User already exists" });
     }
 
+    // ✅ Automatically determine role based on email
+    // You can add multiple admin emails if needed
+    const adminEmails = ["admin@caregroove.com", "manager@caregroove.com"];
+    const isAdmin = adminEmails.includes(email.toLowerCase());
+    const role = isAdmin ? "admin" : "user";
+
     // hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // ✅ parse interests if it comes as stringified JSON
+    // ✅ Parse interests if provided
     let parsedInterests = [];
     if (interests) {
       try {
         parsedInterests = JSON.parse(interests);
-      } catch (err) {
-        parsedInterests = []; // fallback if it's not valid JSON
+      } catch {
+        parsedInterests = [];
       }
     }
 
@@ -42,15 +48,18 @@ router.post("/register", async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      interests: parsedInterests, // store as array
+      interests: parsedInterests,
+      role, // automatically set role
     });
 
     await newUser.save();
 
-    // generate JWT token
-    const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
+    // generate token including role
+    const token = jwt.sign(
+      { id: newUser._id, role: newUser.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
 
     res.status(201).json({
       success: true,
@@ -59,6 +68,7 @@ router.post("/register", async (req, res) => {
         id: newUser._id,
         email: newUser.email,
         name: newUser.name,
+        role: newUser.role,
         interests: newUser.interests,
       },
       msg: "User registered successfully",
@@ -71,7 +81,7 @@ router.post("/register", async (req, res) => {
 
 // =============================
 // @route   POST /api/auth/login
-// @desc    Authenticate user & get token
+// @desc    Authenticate user & get token (auto role check)
 // =============================
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
@@ -94,10 +104,20 @@ router.post("/login", async (req, res) => {
         .json({ success: false, msg: "Invalid credentials" });
     }
 
-    // generate token
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
+    // ✅ Automatically recheck role on login (in case admin added later)
+    const adminEmails = ["admin@caregroove.com", "manager@caregroove.com"];
+    const isAdmin = adminEmails.includes(user.email.toLowerCase());
+    if (user.role !== (isAdmin ? "admin" : "user")) {
+      user.role = isAdmin ? "admin" : "user";
+      await user.save();
+    }
+
+    // generate token including role
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
 
     res.json({
       success: true,
@@ -106,6 +126,7 @@ router.post("/login", async (req, res) => {
         id: user._id,
         email: user.email,
         name: user.name,
+        role: user.role,
         interests: user.interests || [],
       },
     });

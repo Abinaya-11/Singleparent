@@ -22,12 +22,22 @@ const Login = () => {
       const response = await axios.post("/api/auth/login", { email, password });
 
       if (response.data.success) {
-        // ✅ Store JWT token
-        localStorage.setItem("userToken", response.data.token);
+  // ✅ Store JWT token and user details
+  localStorage.setItem("userToken", response.data.token);
+  localStorage.setItem("userRole", response.data.user.role);
+  localStorage.setItem("userEmail", response.data.user.email);
+  localStorage.setItem("userName", response.data.user.name);
+  localStorage.setItem("userId", response.data.user.id);
+  setMessage("✅ Login successful!");
 
-        setMessage("✅ Login successful!");
-        navigate("/main"); // Redirect to MainPage
-      } else {
+  // redirect based on role (optional)
+  if (response.data.user.role === "admin") {
+    navigate("/main"); // you can make a special admin dashboard route if you want
+  } else {
+    navigate("/main"); // normal users go to main page
+  }
+}
+ else {
         setMessage("❌ Invalid credentials");
       }
     } catch (err) {

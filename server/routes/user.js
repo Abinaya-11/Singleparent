@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/user");
+const Connection = require("../models/Connection");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const path = require("path");
@@ -37,6 +38,59 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+// GET /api/user/all
+router.get("/all", authMiddleware, async (req, res) => {
+  try {
+    const currentUserId = req.userId;
+    
+    // Get all users except current user
+    const users = await User.find(
+      { _id: { $ne: currentUserId } }, 
+      { password: 0 }
+    );
+    
+    // Get user's connections and pending requests
+    const connections = await Connection.find({
+      $or: [
+        { requester: currentUserId },
+        { recipient: currentUserId }
+      ]
+    });
+    
+    // Create sets of connected/requested user IDs for efficient filtering
+    const connectedUserIds = new Set();
+    const requestedUserIds = new Set();
+    
+    connections.forEach(conn => {
+      const otherUserId = conn.requester.toString() === currentUserId 
+        ? conn.recipient.toString() 
+        : conn.requester.toString();
+      
+      if (conn.status === "accepted") {
+        connectedUserIds.add(otherUserId);
+      } else if (conn.status === "pending") {
+        requestedUserIds.add(otherUserId);
+      }
+    });
+    
+    // Add metadata to users about their connection status
+    const usersWithStatus = users.map(user => {
+      const userId = user._id.toString();
+      return {
+        ...user.toObject(),
+        isConnected: connectedUserIds.has(userId),
+        isRequested: requestedUserIds.has(userId),
+        canConnect: !connectedUserIds.has(userId) && !requestedUserIds.has(userId)
+      };
+    });
+    
+    res.json({ success: true, users: usersWithStatus });
+  } catch (err) {
+    console.error("Fetch all users error:", err.message);
+    res.status(500).json({ success: false, msg: "Server error" });
+  }
+});
+
 // =============================
 // GET /api/user/profile
 // =============================
@@ -65,6 +119,35 @@ router.get("/profile", authMiddleware, async (req, res) => {
 });
 
 // =============================
+// GET /api/user/profile/:userId - Get any user's profile by ID
+// =============================
+router.get("/profile/:userId", authMiddleware, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    let user = await User.findById(userId).select("-password").lean();
+    if (!user) return res.status(404).json({ success: false, msg: "User not found" });
+
+    // ✅ Always return an array for interests
+    if (typeof user.interests === "string") {
+      try {
+        const parsed = JSON.parse(user.interests);
+        user.interests = Array.isArray(parsed) ? parsed : (parsed ? [parsed] : []);
+      } catch {
+        user.interests = user.interests ? [user.interests] : [];
+      }
+    } else if (!Array.isArray(user.interests)) {
+      user.interests = [];
+    }
+
+    res.json({ success: true, user });
+  } catch (err) {
+    console.error("User profile fetch error:", err.message);
+    res.status(500).json({ success: false, msg: "Server error" });
+  }
+});
+
+// =============================
 // PUT /api/user/profile
 // =============================
 router.put("/profile", authMiddleware, upload.single("profilePic"), async (req, res) => {
@@ -88,7 +171,7 @@ router.put("/profile", authMiddleware, upload.single("profilePic"), async (req, 
     }
 
     // ✅ Handle uploaded profile picture
-    const profilePic = req.file ? `/uploads/${req.file.filename}` : undefined;
+    const profilePic = req.file ? req.file.filename : undefined;
 
     const updatedData = { location, bio, interests };
     if (profilePic) updatedData.profilePic = profilePic;

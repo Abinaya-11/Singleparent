@@ -43,7 +43,23 @@ router.post(
     console.log("FILES:", req.files);
 
     try {
-      const { content, type } = req.body;
+      const { 
+        content, 
+        type, 
+        position, 
+        company, 
+        location, 
+        jobType, 
+        jobDescription, 
+        applicationDeadline, 
+        applicationLink,
+        // Hughand fields
+        title,
+        category,
+        contactEmail,
+        contactPhone,
+        address
+      } = req.body;
 
       // Validate required fields
       if (!content || !type) {
@@ -52,16 +68,43 @@ router.post(
           .json({ success: false, message: "Content and type are required" });
       }
 
-      const image = req.files?.image ? req.files.image[0].path.replace(/\\/g, "/") : null;
-      const doc = req.files?.doc ? req.files.doc[0].path.replace(/\\/g, "/") : null;
+      const image = req.files?.image ? req.files.image[0].filename : null;
+      const doc = req.files?.doc ? req.files.doc[0].filename : null;
 
-      const newPost = await Post.create({
+      // Prepare post data
+      const postData = {
         user: req.user._id,
         content,
         type,
         image,
         doc,
-      });
+      };
+
+      // Add job details if this is a job post
+      if (type === "job") {
+        postData.jobDetails = {
+          position: position || "",
+          company: company || "",
+          location: location || "",
+          jobType: jobType || "",
+          jobDescription: jobDescription || "",
+          applicationDeadline: applicationDeadline ? new Date(applicationDeadline) : null,
+          applicationLink: applicationLink || "",
+        };
+      }
+      
+      // Add hughand details if this is a hughand post
+      if (type === "hughand") {
+        postData.hughandDetails = {
+          title: title || "",
+          category: category || "",
+          contactEmail: contactEmail || "",
+          contactPhone: contactPhone || "",
+          address: address || "",
+        };
+      }
+
+      const newPost = await Post.create(postData);
 
       console.log("✅ New post saved:", newPost._id);
 
@@ -75,38 +118,116 @@ router.post(
   }
 );
 
+// Debug endpoint to test if changes are loaded
+router.get("/debug", (req, res) => {
+  res.json({ message: "Debug endpoint - changes are loaded!", timestamp: new Date() });
+});
+
 // ============================
-// Get All Posts of Logged-in User
+// Get All Thoughts (populated with user name) - PUBLIC ACCESS
 // ============================
+router.get("/all-thoughts", async (req, res) => {
+  try {
+    console.log("📥 GET /all-thoughts request received");
+    
+    // fetch all posts where type = 'thought', newest first, and populate user name and profilePic
+    const thoughts = await Post.find({ type: "thought" })
+      .sort({ createdAt: -1 })
+      .populate("user", "name profilePic");
+
+    console.log(`📤 Sending ${thoughts.length} thoughts`);
+    res.json({ success: true, thoughts });
+  } catch (err) {
+    console.error("❌ Error fetching thoughts:", err);
+    res.status(500).json({ success: false, message: "Failed to fetch thoughts", error: err.message });
+  }
+});
+
+// ============================
+// Get All Job Posts (populated with user name) - PUBLIC ACCESS
+// ============================
+router.get("/all-jobs", async (req, res) => {
+  try {
+    console.log("📥 GET /all-jobs request received");
+    
+    // fetch all posts where type = 'job', newest first, and populate user name and profilePic
+    const jobs = await Post.find({ type: "job" })
+      .sort({ createdAt: -1 })
+      .populate("user", "name profilePic");
+
+    console.log(`📤 Sending ${jobs.length} job posts`);
+    res.json({ success: true, jobs });
+  } catch (err) {
+    console.error("❌ Error fetching jobs:", err);
+    res.status(500).json({ success: false, message: "Failed to fetch jobs", error: err.message });
+  }
+});
+//FOR MY-POST
+// server/routes/postRoutes.js
 router.get("/my-posts", protect, async (req, res) => {
   try {
-    const posts = await Post.find({ user: req.user._id }).sort({ createdAt: -1 });
-    console.log(`📤 Sending ${posts.length} posts for user ${req.user._id}`);
-    res.json({ success: true, posts });
+    // req.user.id comes from the 'protect' middleware
+    const myPosts = await Post.find({ user: req.user.id })
+      .sort({ createdAt: -1 }); // newest first
+
+    res.json({ success: true, posts: myPosts });
   } catch (err) {
-    console.error("❌ Error fetching posts:", err);
+    console.error("❌ Error fetching my posts:", err);
     res.status(500).json({ success: false, message: "Failed to fetch posts" });
   }
 });
 
-// ✅ DELETE a post by ID
+// Get posts by user ID
+router.get("/user-posts/:userId", protect, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const userPosts = await Post.find({ user: userId })
+      .sort({ createdAt: -1 }); // newest first
+
+    res.json({ success: true, posts: userPosts });
+  } catch (err) {
+    console.error("❌ Error fetching user posts:", err);
+    res.status(500).json({ success: false, message: "Failed to fetch user posts" });
+  }
+});
+
+// ============================
+// Get All Hughand Posts (populated with user name)
+// ============================
+router.get("/hughand", protect, async (req, res) => {
+  try {
+    // fetch all posts where type = 'hughand', newest first, and populate user name and profilePic
+    const hughandPosts = await Post.find({ type: "hughand" })
+      .sort({ createdAt: -1 })
+      .populate("user", "name profilePic");
+
+    console.log(`📤 Sending ${hughandPosts.length} hughand posts`);
+    res.json({ success: true, posts: hughandPosts });
+  } catch (err) {
+    console.error("❌ Error fetching hughand posts:", err);
+    res.status(500).json({ success: false, message: "Failed to fetch hughand posts" });
+  }
+});
+
+// ============================
+// DELETE a post by ID
+// ============================
 router.delete("/:id", protect, async (req, res) => {
-  
   try {
     const postId = req.params.id;
 
-    // find the post
+    // Find the post
     const post = await Post.findById(postId);
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }
 
-    // check if the post belongs to the logged-in user
+    // Check if the post belongs to the logged-in user
     if (post.user.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "Not authorized to delete this post" });
     }
 
-    // delete the post
+    // Delete the post
     await post.deleteOne();
 
     res.json({ message: "Post deleted successfully" });
@@ -115,6 +236,5 @@ router.delete("/:id", protect, async (req, res) => {
     res.status(500).json({ message: "Server error deleting post" });
   }
 });
-
 
 module.exports = router;

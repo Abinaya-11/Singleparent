@@ -23,9 +23,22 @@ const Register = () => {
 })
 
       if (res.data.success) {
-        setMsg("✅ Registered successfully!");
-        // navigate("/");
-      }
+  // ✅ Save token and user info to localStorage
+  localStorage.setItem("userToken", res.data.token);
+  localStorage.setItem("userRole", res.data.user.role);
+  localStorage.setItem("userEmail", res.data.user.email);
+  localStorage.setItem("userName", res.data.user.name);
+
+  setMsg("✅ Registered successfully!");
+
+  // ✅ Optionally redirect based on role
+  if (res.data.user.role === "admin") {
+    navigate("/main"); // or wherever your admin dashboard is
+  } else {
+    navigate("/main"); // normal users go to main page
+  }
+}
+
     } catch (err) {
       setMsg("❌ " + (err.response?.data?.msg || "Error during registration"));
     }
