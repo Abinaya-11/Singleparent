@@ -1,22 +1,21 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { User, Lightbulb, Heart, Home, Bell, Handshake } from 'lucide-react';
-import mainimage from "../assets/hero_section.webp";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 import e1 from "../assets/E1.jpg";
 import e2 from "../assets/E2.png";
 import e3 from "../assets/E3.jpg";
 import e4 from "../assets/E4.png";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { jwtDecode } from "jwt-decode"; // ✅ correct import for v4+
+
+import mainimage from "../assets/hero_section.webp";
 
 const MainPage = ({ notifications, setNotifications }) => {
-  const [currentSection, setCurrentSection] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [requestedUsers, setRequestedUsers] = useState([]);
-  const [connectedUsers, setConnectedUsers] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
   
   // Community states
@@ -27,7 +26,6 @@ const MainPage = ({ notifications, setNotifications }) => {
   const sections = ['hero', 'resources', 'community', 'profiles', 'stories', 'testimonials'];
 
   const scrollToSection = (index) => {
-    setCurrentSection(index);
     const element = document.getElementById(sections[index]);
     element?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -51,9 +49,7 @@ const MainPage = ({ notifications, setNotifications }) => {
         const shuffled = [...availableUsers].sort(() => Math.random() - 0.5);
         setUsers(shuffled.slice(0, 8));
         
-        const connected = data.users.filter(u => u.isConnected).map(u => u._id.toString());
         const requested = data.users.filter(u => u.isRequested).map(u => u._id.toString());
-        setConnectedUsers(connected);
         setRequestedUsers(requested);
       }
     } catch (err) {
@@ -357,7 +353,7 @@ const MainPage = ({ notifications, setNotifications }) => {
               <p className="text-gray-600">Join live hangouts and gain insight to make your day.</p>
             </div>
 
-            <div onClick={() => navigate("/jobhive")} className="cursor-pointer text-center p-8 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 hover:shadow-xl transition-all hover:-translate-y-2">
+            <div onClick={() => { navigate("/jobhive"); window.scrollTo(0, 0); }} className="cursor-pointer text-center p-8 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 hover:shadow-xl transition-all hover:-translate-y-2">
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Lightbulb className="w-8 h-8 text-blue-600" />
               </div>
@@ -365,7 +361,7 @@ const MainPage = ({ notifications, setNotifications }) => {
               <p className="text-gray-600">Empowering single parents with new job opportunities.</p>
             </div>
 
-            <div onClick={() => navigate("/hughand")} className="cursor-pointer text-center p-8 rounded-2xl bg-gradient-to-br from-purple-50 to-pink-50 hover:shadow-xl transition-all hover:-translate-y-2">
+            <div onClick={() => { navigate("/hughand"); window.scrollTo(0, 0); }} className="cursor-pointer text-center p-8 rounded-2xl bg-gradient-to-br from-purple-50 to-pink-50 hover:shadow-xl transition-all hover:-translate-y-2">
               <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Handshake className="w-8 h-8 text-purple-600" />
               </div>
@@ -436,28 +432,49 @@ const MainPage = ({ notifications, setNotifications }) => {
               {users.map(user => (
                 <div
                   key={user._id}
-                  className="min-w-[260px] max-w-[260px] snap-center flex-shrink-0 bg-gradient-to-br from-gray-50 to-gray-100 text-center p-6 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300"
+                  className="min-w-[260px] max-w-[260px] snap-center flex-shrink-0 bg-gradient-to-br from-gray-50 to-gray-100 p-6 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300"
                 >
-                  <img
-                    src={user.profilePic || "https://images.unsplash.com/default-profile.jpg?w=120&h=120"}
-                    className="w-24 h-24 rounded-full mx-auto mb-4 border-4 border-white shadow-lg object-cover"
-                    alt={user.name}
-                  />
-                  <h3 className="text-xl font-bold text-gray-900 mb-2 truncate">{user.name}</h3>
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                    {user.bio || "No bio yet."}
-                  </p>
-                  <button
-                    disabled={requestedUsers.includes(user._id)}
-                    onClick={() => sendConnectNotification(user._id, user.name)}
-                    className={`px-6 py-2 rounded-lg font-semibold transition-colors text-white ${
-                      requestedUsers.includes(user._id)
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-amber-500 hover:bg-amber-600"
-                    }`}
-                  >
-                    {requestedUsers.includes(user._id) ? "Requested" : "Connect"}
-                  </button>
+                  {/* Profile Picture */}
+                  <div className="flex justify-center mb-3">
+                    {user.profilePic ? (
+                      <img
+                        src={user.profilePic}
+                        className="w-16 h-16 rounded-full border-2 border-white shadow-lg object-cover"
+                        alt={user.name}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          const parent = e.target.parentElement;
+                          const fallback = document.createElement('div');
+                          fallback.className = 'w-16 h-16 rounded-full border-2 border-white shadow-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center';
+                          fallback.innerHTML = `<span class="text-white text-xl font-bold">${user.name[0].toUpperCase()}</span>`;
+                          parent.appendChild(fallback);
+                        }}
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full border-2 border-white shadow-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                        <span className="text-white text-xl font-bold">{user.name[0].toUpperCase()}</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Name and Details */}
+                  <div className="text-center">
+                    <h3 className="text-xl font-bold text-gray-900 mb-2 truncate">{user.name}</h3>
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                      {user.bio || "No bio yet."}
+                    </p>
+                    <button
+                      disabled={requestedUsers.includes(user._id)}
+                      onClick={() => sendConnectNotification(user._id, user.name)}
+                      className={`px-6 py-2 rounded-lg font-semibold transition-colors text-white ${
+                        requestedUsers.includes(user._id)
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-amber-500 hover:bg-amber-600"
+                      }`}
+                    >
+                      {requestedUsers.includes(user._id) ? "Requested" : "Connect"}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -507,30 +524,30 @@ const MainPage = ({ notifications, setNotifications }) => {
             <div>
               <h4 className="font-semibold mb-4">Resources</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">GrowTalks</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">SkillHub</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">FundNest</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">KidCare</a></li>
+                <li><button onClick={() => navigate("/groovetalks")} className="hover:text-white transition-colors text-left">GrooveTalks</button></li>
+                <li><button onClick={() => navigate("/jobhive")} className="hover:text-white transition-colors text-left">JobHive</button></li>
+                <li><button onClick={() => navigate("/fundnest")} className="hover:text-white transition-colors text-left">FundNest</button></li>
+                <li><button onClick={() => navigate("/daycare")} className="hover:text-white transition-colors text-left">DayCare</button></li>
               </ul>
             </div>
 
             <div>
               <h4 className="font-semibold mb-4">Community</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Support Circles</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Forums</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Stories</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Events</a></li>
+                <li><button onClick={() => navigate("/community")} className="hover:text-white transition-colors text-left">Support Circles</button></li>
+                <li><button onClick={() => navigate("/community")} className="hover:text-white transition-colors text-left">Forums</button></li>
+                <li><button onClick={() => navigate("/groovetalks")} className="hover:text-white transition-colors text-left">Stories</button></li>
+                <li><button onClick={() => navigate("/community")} className="hover:text-white transition-colors text-left">Events</button></li>
               </ul>
             </div>
 
             <div>
               <h4 className="font-semibold mb-4">Support</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact Us</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
+                <li><button onClick={() => alert("Help Center - Coming Soon!")} className="hover:text-white transition-colors text-left">Help Center</button></li>
+                <li><button onClick={() => alert("Contact Us - Coming Soon!")} className="hover:text-white transition-colors text-left">Contact Us</button></li>
+                <li><button onClick={() => alert("Privacy Policy - Coming Soon!")} className="hover:text-white transition-colors text-left">Privacy Policy</button></li>
+                <li><button onClick={() => alert("Terms of Service - Coming Soon!")} className="hover:text-white transition-colors text-left">Terms of Service</button></li>
               </ul>
             </div>
           </div>

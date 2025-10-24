@@ -63,6 +63,9 @@ const itemRequestRoutes = require("./routes/itemRequests");
 // Community routes
 const communityRoutes = require("./routes/community");
 
+// Campaign routes
+const campaignRoutes = require("./routes/campaigns");
+
 // =============================
 // Mount Routes
 // =============================
@@ -75,6 +78,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/connections", connectionRoutes);
 app.use("/api/item-requests", itemRequestRoutes);
 app.use("/api/community", communityRoutes);
+app.use("/api/campaigns", campaignRoutes);
 
 // Debug route to test if server is working
 app.get("/api/test", (req, res) => {

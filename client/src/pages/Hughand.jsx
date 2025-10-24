@@ -22,7 +22,6 @@ import { jwtDecode } from 'jwt-decode';
 
 const CareGroovePage = ({ notifications, setNotifications }) => {
   const navigate = useNavigate();
-  const [hoveredCard, setHoveredCard] = useState(null);
   const itemsSectionRef = useRef(null);
 
   // ✅ Added missing states and handlers
@@ -59,17 +58,32 @@ const CareGroovePage = ({ notifications, setNotifications }) => {
   
   const API_URL = "http://localhost:5000";
   
-  // Function to get file URL
+  // Function to get file URL - handles all possible path formats
   const getFileUrl = (path) => {
     if (!path) return null;
-    if (path.startsWith("http")) return path;
+    
+    // Already a full URL
+    if (path.startsWith("http://") || path.startsWith("https://")) {
+      console.log('getFileUrl (already full URL):', path);
+      return path;
+    }
     
     let finalUrl;
+    
+    // Path starts with /uploads/
     if (path.startsWith("/uploads/")) {
       finalUrl = `${API_URL}${path}`;
-    } else {
+    } 
+    // Path starts with uploads/ (without leading slash)
+    else if (path.startsWith("uploads/")) {
+      finalUrl = `${API_URL}/${path}`;
+    }
+    // Just the filename
+    else {
       finalUrl = `${API_URL}/uploads/${path}`;
     }
+    
+    console.log('getFileUrl:', path, '->', finalUrl);
     return finalUrl;
   };
   
@@ -94,13 +108,27 @@ const CareGroovePage = ({ notifications, setNotifications }) => {
           })
         ]);
         
-        // Process posts and fix image URLs
-        const processedPosts = postsResponse.data.posts.map(post => ({
-          ...post,
-          image: post.image ? getFileUrl(post.image) : null,
-          doc: post.doc ? getFileUrl(post.doc) : null
-        }));
+        console.log('Raw posts from server:', postsResponse.data.posts.length);
+        postsResponse.data.posts.forEach((post, idx) => {
+          console.log(`Post ${idx}:`, {
+            id: post._id,
+            title: post.hughandDetails?.title,
+            hasImage: !!post.image,
+            image: post.image
+          });
+        });
         
+        // Process posts and fix image URLs
+        const processedPosts = postsResponse.data.posts.map(post => {
+          const processedPost = {
+            ...post,
+            image: post.image ? getFileUrl(post.image) : null,
+            doc: post.doc ? getFileUrl(post.doc) : null
+          };
+          return processedPost;
+        });
+        
+        console.log('Processed posts:', processedPosts.length);
         setPosts(processedPosts);
         
         // Extract post IDs that user has requested (with pending status)
@@ -154,10 +182,16 @@ const CareGroovePage = ({ notifications, setNotifications }) => {
       });
       
       const newPost = response.data.post;
-      newPost.image = newPost.image ? getFileUrl(newPost.image) : null;
-      newPost.doc = newPost.doc ? getFileUrl(newPost.doc) : null;
+      // Process the new post with proper image URLs
+      const processedNewPost = {
+        ...newPost,
+        image: newPost.image ? getFileUrl(newPost.image) : null,
+        doc: newPost.doc ? getFileUrl(newPost.doc) : null
+      };
       
-      setPosts(prev => [newPost, ...prev]);
+      console.log('New post created with image:', newPost.image, '-> processed:', processedNewPost.image);
+      
+      setPosts(prev => [processedNewPost, ...prev]);
       
       // Reset form
       resetForm();
@@ -252,79 +286,6 @@ const CareGroovePage = ({ notifications, setNotifications }) => {
     }
   };
 
-  const scrollToItems = () => {
-    itemsSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const items = [
-    {
-      id: 1,
-      category: "Baby Gear",
-      title: "Toddler Stroller",
-      description: "Gently used, compact stroller suitable for ages 6 months to 3 years. Easy to fold and lightweight. Perfect for daily walks.",
-      sender: "Maria Rodriguez",
-      email: "maria.r@example.com",
-      phone: "+1 (555) 123-4567",
-      address: "123 Maple Street, Anytown, CA 90210",
-      image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=300&fit=crop"
-    },
-    {
-      id: 2,
-      category: "Books & Toys",
-      title: "Children's Book Collection",
-      description: "Set of 12 colorful storybooks and picture books for ages 3-7. Excellent condition, great for bedtime stories and early reading.",
-      sender: "David Chen",
-      email: "david.c@example.com",
-      phone: "+1 (555) 234-5678",
-      address: "456 Oak Avenue, Cityville, NY 10001",
-      image: "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=300&fit=crop"
-    },
-    {
-      id: 3,
-      category: "Clothing",
-      title: "Winter Coat (Child)",
-      description: "Warm and cozy winter coat for ages 5-7 years old. Navy blue, with detachable hood. Very good condition, perfect for cold weather.",
-      sender: "Sophia Ali",
-      email: "sophia.a@example.com",
-      phone: "+1 (555) 345-6789",
-      address: "789 Pine Lane, Townsville, TX 77002",
-      image: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400&h=300&fit=crop"
-    },
-    {
-      id: 4,
-      category: "Baby Essentials",
-      title: "Baby Feeding Set",
-      description: "Complete baby feeding set including bottles, sippy cups, and plates. All BPA-free and in new condition. Sterilized and ready to use.",
-      sender: "Robert Johnson",
-      email: "robert.j@example.com",
-      phone: "+1 (555) 456-7890",
-      address: "101 Elm Drive, Villageton, FL 33101",
-      image: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&h=300&fit=crop"
-    },
-    {
-      id: 5,
-      category: "Hobbies",
-      title: "Art & Craft Supplies",
-      description: "Variety of art and craft supplies for creative kids: colored pencils, markers, construction paper, and glue sticks. Mostly unused.",
-      sender: "Emily White",
-      email: "emily.w@example.com",
-      phone: "+1 (555) 567-8901",
-      address: "202 Birch Road, Suburbia, CA 90003",
-      image: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400&h=300&fit=crop"
-    },
-    {
-      id: 6,
-      category: "Baby Gear",
-      title: "High Chair",
-      description: "Sturdy and adjustable high chair, easy to clean. Suitable for babies learning to self-feed. Excellent condition with safety harness.",
-      sender: "Juan Perez",
-      email: "juan.p@example.com",
-      phone: "+1 (555) 678-9012",
-      address: "303 Cedar Court, Metroville, IL 60606",
-      image: "https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=400&h=300&fit=crop"
-    }
-  ];
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 to-purple-50 relative">
       {/* Header */}
@@ -340,9 +301,9 @@ const CareGroovePage = ({ notifications, setNotifications }) => {
 
           <div className="flex items-center space-x-8">
             <button onClick={() => navigate("/main")} className="text-gray-700 hover:text-amber-600">Home</button>
-            <a href="#" className="text-gray-700 hover:text-orange-500 transition-colors">Explore</a>
-            <a href="#" className="text-gray-700 hover:text-orange-500 transition-colors">Community</a>
-            <a href="#" className="text-gray-700 hover:text-orange-500 transition-colors">Resources</a>
+            <button onClick={() => navigate("/main")} className="text-gray-700 hover:text-orange-500 transition-colors">Explore</button>
+            <button onClick={() => navigate("/community")} className="text-gray-700 hover:text-orange-500 transition-colors">Community</button>
+            <button onClick={() => navigate("/main")} className="text-gray-700 hover:text-orange-500 transition-colors">Resources</button>
             <button onClick={() => navigate("/mynetworks")} className="text-gray-700 hover:text-amber-600">My Networks</button>
           </div>
 
@@ -395,7 +356,15 @@ const CareGroovePage = ({ notifications, setNotifications }) => {
               Parenting isn't meant to be a solo journey. Here, you'll find connection, encouragement, and people who truly understand. Join our 'Hug & Hand' community to share resources, exchange items, and offer mutual support.
             </p>
             <button
-              onClick={scrollToItems}
+              onClick={() => {
+                setShowCreateCard(true);
+                setTimeout(() => {
+                  const createSection = document.querySelector('.bg-white.rounded-lg.shadow-lg');
+                  if (createSection) {
+                    createSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }, 100);
+              }}
               className="bg-gradient-to-r from-orange-400 to-orange-500 text-white px-8 py-3 rounded-lg font-semibold hover:shadow-lg transform hover:scale-105 transition duration-200"
             >
               Start Helping Today
@@ -579,20 +548,33 @@ const CareGroovePage = ({ notifications, setNotifications }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {posts.length > 0 ? (
               posts.map((post) => (
-                <div
+                  <div
                   key={post._id}
                   className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition duration-300 transform hover:-translate-y-2"
-                  onMouseEnter={() => setHoveredCard(post._id)}
-                  onMouseLeave={() => setHoveredCard(null)}
                 >
                   <div className="relative">
                     {post.image ? (
                       <img 
-                        src={post.image} 
-                        alt={post.title || post.content} 
+                        src={post.image}
+                        alt={post.hughandDetails?.title || post.content} 
                         className="w-full h-48 object-cover"
                         onError={(e) => {
-                          e.target.style.display = 'none';
+                          console.error('❌ Image failed to load');
+                          console.error('Post ID:', post._id);
+                          console.error('Original image value:', post.image);
+                          console.error('Attempted URL:', e.target.src);
+                          
+                          // Try alternative URL formats as fallback
+                          if (!e.target.dataset.retried) {
+                            e.target.dataset.retried = 'true';
+                            // Extract just the filename if possible
+                            const filename = post.image.split('/').pop();
+                            console.log('Retrying with filename only:', filename);
+                            e.target.src = `${API_URL}/uploads/${filename}`;
+                          } else {
+                            console.error('Retry also failed, hiding image');
+                            e.target.style.display = 'none';
+                          }
                         }}
                       />
                     ) : (
@@ -644,6 +626,28 @@ const CareGroovePage = ({ notifications, setNotifications }) => {
                     )}
 
                     <div className="flex gap-3 pt-4">
+                      {isPostOwner(post) && (
+                        <button 
+                          onClick={async () => {
+                            if (window.confirm('Are you sure you want to delete this post?')) {
+                              try {
+                                const token = localStorage.getItem("userToken");
+                                await axios.delete(`/api/posts/${post._id}`, {
+                                  headers: { Authorization: `Bearer ${token}` }
+                                });
+                                setPosts(prev => prev.filter(p => p._id !== post._id));
+                                alert('Post deleted successfully!');
+                              } catch (error) {
+                                console.error('Error deleting post:', error);
+                                alert('Failed to delete post');
+                              }
+                            }
+                          }}
+                          className="flex-1 bg-red-500 text-white py-2 rounded-lg font-medium hover:bg-red-600 transition"
+                        >
+                          Delete
+                        </button>
+                      )}
                       {isPostOwner(post) ? (
                         <button 
                           disabled
@@ -781,19 +785,9 @@ const CareGroovePage = ({ notifications, setNotifications }) => {
       )}
 
       {/* Footer */}
-      <footer className="bg-white py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-          <div className="flex space-x-8 text-sm text-gray-600">
-            <a href="#" className="hover:text-orange-500 transition">Company</a>
-            <a href="#" className="hover:text-orange-500 transition">Legal</a>
-            <a href="#" className="hover:text-orange-500 transition">Support</a>
-          </div>
-          <div className="flex space-x-4">
-            <a href="#" className="text-gray-400 hover:text-orange-500 transition"><Facebook size={20} /></a>
-            <a href="#" className="text-gray-400 hover:text-orange-500 transition"><Twitter size={20} /></a>
-            <a href="#" className="text-gray-400 hover:text-orange-500 transition"><Instagram size={20} /></a>
-            <a href="#" className="text-gray-400 hover:text-orange-500 transition"><Linkedin size={20} /></a>
-          </div>
+      <footer className="bg-white border-t border-gray-200 py-8">
+        <div className="max-w-7xl mx-auto px-4 text-center text-gray-600 text-sm">
+          © 2025 CareGroove. All rights reserved.
         </div>
       </footer>
     </div>

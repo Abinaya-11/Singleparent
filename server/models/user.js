@@ -12,6 +12,9 @@ const userSchema = new mongoose.Schema(
   default: "user",
 },
 
+    // Google OAuth field
+    googleId: { type: String, default: null },
+    
     // NEW fields for profile page
     profilePic: { type: String, default: "" },
     location: { type: String, default: "" },

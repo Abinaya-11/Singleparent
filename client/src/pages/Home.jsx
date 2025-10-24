@@ -1,11 +1,22 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Heart} from 'lucide-react';
 import homeIllustration from '../assets/home-illustration.png'; // Adjust if needed
 
 export default function HomePage() {
   return (
+    
     <div className="min-h-screen bg-[#F9E2B6] flex flex-col md:flex-row items-center justify-between px-4 sm:px-6 md:px-8 py-6 relative">
-      
+      {/* Top-left Logo */}
+      <div className="absolute top-4 left-4 sm:left-6 md:left-8 z-10">
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 bg-gradient-to-r from-[#A07627] to-[#A07627] rounded-full flex items-center justify-center">
+            <Heart className="w-4 h-4 text-white" />
+          </div>
+          <span className="text-xl font-bold text-[#433939]">CareGroove</span>
+        </div>
+      </div>
+
       {/* Top-right Navbar */}
       <div className="absolute top-4 right-4 sm:right-6 md:right-8 flex space-x-4 sm:space-x-6 text-sm sm:text-base md:text-lg font-semibold text-[#A07627] z-10">
         <Link to="/login" className="hover:underline">Login</Link>

@@ -552,7 +552,7 @@ router.get("/chat", protect, async (req, res) => {
       id: msg._id,
       message: msg.message,
       sender: {
-        id: msg.sender._id,
+        id: msg.sender._id.toString(),
         name: msg.sender.name,
         profilePic: msg.sender.profilePic
       },
@@ -571,6 +571,51 @@ router.get("/chat", protect, async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: "Failed to fetch messages" 
+    });
+  }
+});
+
+// ============================
+// Delete Chat Message
+// ============================
+router.delete("/chat/:messageId", protect, async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user._id;
+    
+    // Find the message
+    const message = await Chat.findById(messageId);
+    
+    if (!message) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Message not found" 
+      });
+    }
+    
+    // Check if the user is the sender of the message
+    if (message.sender.toString() !== userId.toString()) {
+      return res.status(403).json({ 
+        success: false, 
+        message: "You can only delete your own messages" 
+      });
+    }
+    
+    // Soft delete the message
+    message.isDeleted = true;
+    message.deletedAt = new Date();
+    await message.save();
+    
+    res.json({
+      success: true,
+      message: "Message deleted successfully"
+    });
+    
+  } catch (error) {
+    console.error("Error deleting chat message:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to delete message" 
     });
   }
 });

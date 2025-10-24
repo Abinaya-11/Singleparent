@@ -2,9 +2,12 @@ import React, { useState } from "react";
 import { FaEnvelope, FaLock } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+
+// Configure axios base URL
+axios.defaults.baseURL = 'http://localhost:5000';
 import { useGoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode"; // fixed import
-
+import { Heart} from 'lucide-react';
 import googleIcon from "../assets/google-icon.png";
 import illustration from "../assets/login-illustration.jpg";
 
@@ -48,21 +51,63 @@ const Login = () => {
 
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
+      console.log('Google login success:', tokenResponse);
       try {
-        const decoded = jwtDecode(tokenResponse.credential);
-        localStorage.setItem("userToken", tokenResponse.credential);
-
-        setMessage(`✅ Welcome ${decoded.name}`);
-        navigate("/main"); // Redirect to MainPage
+        // For OAuth2 flow, we get an access_token, not a JWT credential
+        // We need to fetch user info from Google API
+        const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+          headers: {
+            'Authorization': `Bearer ${tokenResponse.access_token}`,
+          },
+        });
+        
+        const userInfo = await response.json();
+        console.log('Google user info:', userInfo);
+        
+        // Store user information
+        localStorage.setItem("userToken", tokenResponse.access_token);
+        localStorage.setItem("userName", userInfo.name);
+        localStorage.setItem("userEmail", userInfo.email);
+        localStorage.setItem("userId", userInfo.id);
+        localStorage.setItem("userRole", "user"); // default role
+        
+        setMessage(`✅ Welcome ${userInfo.name}!`);
+        
+        // Send user info to backend and get JWT token
+        try {
+          const backendResponse = await axios.post('/api/auth/google-login', {
+            googleId: userInfo.id,
+            email: userInfo.email,
+            name: userInfo.name,
+            picture: userInfo.picture
+          });
+          
+          if (backendResponse.data.success) {
+            // Replace Google access token with our backend JWT token
+            localStorage.setItem("userToken", backendResponse.data.token);
+            localStorage.setItem("userName", backendResponse.data.user.name);
+            localStorage.setItem("userEmail", backendResponse.data.user.email);
+            localStorage.setItem("userId", backendResponse.data.user.id);
+            localStorage.setItem("userRole", backendResponse.data.user.role);
+            
+            console.log('Backend Google login successful');
+          }
+        } catch (backendError) {
+          console.error('Backend Google login failed:', backendError);
+          setMessage("❌ Google login failed - server error");
+          return;
+        }
+        
+        navigate("/main");
       } catch (error) {
         console.error("Google Login Error:", error);
-        setMessage("❌ Google login failed");
+        setMessage("❌ Google login failed - please try again");
       }
     },
-    onError: () => {
-      setMessage("❌ Google login failed");
+    onError: (error) => {
+      console.error('Google login error:', error);
+      setMessage("❌ Google login failed - please check your connection");
     },
-    flow: "implicit",
   });
 
   return (
@@ -70,7 +115,14 @@ const Login = () => {
       <div className="w-full md:w-[60%] flex items-center justify-center bg-white py-10">
         <img src={illustration} alt="Login Illustration" className="w-[80%] max-w-sm md:max-w-[75%] object-contain" />
       </div>
-
+    <div className="absolute top-4 right-4 sm:right-6 md:right-8 flex space-x-4 sm:space-x-6 text-sm sm:text-base md:text-lg font-semibold text-[#A07627] z-10">
+      <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full flex items-center justify-center">
+            <Heart className="w-4 h-4 text-white" />
+          </div>
+          <span className="text-xl font-bold text-gray-700">CareGroove</span>
+        </div>
+      </div>
       <div className="w-full md:w-[40%] bg-[#fcd385] flex flex-col justify-center px-6 sm:px-12 py-10">
         <h2 className="text-2xl italic text-[#805300] mb-8 text-center">Welcome</h2>
 

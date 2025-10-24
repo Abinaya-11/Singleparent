@@ -42,6 +42,8 @@ const CommunityDashboard = () => {
   const [showDateEvents, setShowDateEvents] = useState(false);
   const [dateEvents, setDateEvents] = useState([]);
   const [selectedDateInfo, setSelectedDateInfo] = useState('');
+  const [contextMenu, setContextMenu] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
 
   const handleLogout = () => {
     localStorage.removeItem('userToken');
@@ -84,6 +86,28 @@ const CommunityDashboard = () => {
     }
   };
 
+  // Fetch current user info
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const token = localStorage.getItem("userToken");
+        if (!token) return;
+        
+        const response = await axios.get("/api/user/profile", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.data.success) {
+          setCurrentUser(response.data.user);
+        }
+      } catch (error) {
+        console.error("Error fetching current user:", error);
+      }
+    };
+    
+    fetchCurrentUser();
+  }, []);
+  
   // Check community membership and fetch data
   useEffect(() => {
     const fetchCommunityData = async () => {
@@ -154,6 +178,7 @@ const CommunityDashboard = () => {
           id: newMessage._id,
           message: newMessage.message,
           sender: {
+            id: newMessage.sender._id,
             name: newMessage.sender.name,
             profilePic: newMessage.sender.profilePic
           },
@@ -235,6 +260,52 @@ const CommunityDashboard = () => {
       handleSendMessage();
     }
   };
+  
+  // Delete chat message
+  const handleDeleteMessage = async (messageId) => {
+    if (!window.confirm("Are you sure you want to delete this message?")) {
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem("userToken");
+      const response = await axios.delete(`/api/community/chat/${messageId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.success) {
+        // Remove message from UI
+        setChatMessages(prev => prev.filter(msg => msg.id !== messageId));
+        setContextMenu(null);
+      }
+    } catch (error) {
+      console.error("Error deleting message:", error);
+      alert(error.response?.data?.message || "Failed to delete message");
+    }
+  };
+  
+  // Handle right-click on chat message
+  const handleContextMenu = (e, chat) => {
+    e.preventDefault();
+    
+    // Only show context menu if user is the sender
+    if (currentUser && chat.sender.id === currentUser._id) {
+      setContextMenu({
+        x: e.clientX,
+        y: e.clientY,
+        messageId: chat.id
+      });
+    }
+  };
+  
+  // Close context menu when clicking outside
+  useEffect(() => {
+    const handleClick = () => setContextMenu(null);
+    if (contextMenu) {
+      document.addEventListener('click', handleClick);
+      return () => document.removeEventListener('click', handleClick);
+    }
+  }, [contextMenu]);
   
   // Handle calendar date click
   const handleDateClick = async (day) => {
@@ -755,7 +826,11 @@ const CommunityDashboard = () => {
               <div className="space-y-3 mb-4 max-h-80 overflow-y-auto">
                 {chatMessages.length > 0 ? (
                   chatMessages.map((chat) => (
-                    <div key={chat.id} className="flex gap-3">
+                    <div 
+                      key={chat.id} 
+                      className="flex gap-3 hover:bg-gray-50 p-2 rounded-lg transition-colors cursor-pointer"
+                      onContextMenu={(e) => handleContextMenu(e, chat)}
+                    >
                       <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
                         <img 
                           src={getProfileImageUrl(chat.sender.profilePic, chat.sender.name)} 
@@ -770,6 +845,9 @@ const CommunityDashboard = () => {
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-medium text-gray-900 text-sm">{chat.sender.name}</span>
                           <span className="text-xs text-gray-500">{chat.time}</span>
+                          {chat.isEdited && (
+                            <span className="text-xs text-gray-400 italic">(edited)</span>
+                          )}
                         </div>
                         <p className="text-sm text-gray-700">{chat.message}</p>
                       </div>
@@ -807,16 +885,9 @@ const CommunityDashboard = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-12 py-6">
-        <div className="max-w-7xl mx-auto px-8 flex items-center justify-between text-sm text-gray-600">
-          <div className="flex items-center gap-2">
-            <span>Made with</span>
-            <span className="text-blue-600 font-semibold">Visily</span>
-          </div>
-          <div className="flex items-center gap-6">
-            <a href="#" className="hover:text-gray-900">Resources</a>
-            <a href="#" className="hover:text-gray-900">Company</a>
-          </div>
+      <footer className="bg-white border-t border-gray-200 py-8">
+        <div className="max-w-7xl mx-auto px-4 text-center text-gray-600 text-sm">
+          © 2025 CareGroove. All rights reserved.
         </div>
       </footer>
       
@@ -987,6 +1058,39 @@ const CommunityDashboard = () => {
               )}
             </div>
           </div>
+        </div>
+      )}
+      
+      {/* Context Menu for Chat Delete */}
+      {contextMenu && (
+        <div
+          className="fixed bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50"
+          style={{
+            top: `${contextMenu.y}px`,
+            left: `${contextMenu.x}px`
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => handleDeleteMessage(contextMenu.messageId)}
+            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+          >
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              className="h-4 w-4" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" 
+              />
+            </svg>
+            Delete Message
+          </button>
         </div>
       )}
     </div>

@@ -136,4 +136,69 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// =============================
+// @route   POST /api/auth/google-login
+// @desc    Authenticate user with Google OAuth
+// =============================
+router.post("/google-login", async (req, res) => {
+  const { googleId, email, name, picture } = req.body;
+
+  try {
+    console.log("Google login request received:", { googleId, email, name });
+
+    // Check if user already exists
+    let user = await User.findOne({ email });
+    
+    if (user) {
+      // User exists - update Google ID if not set
+      if (!user.googleId) {
+        user.googleId = googleId;
+        user.profilePic = picture;
+        await user.save();
+      }
+    } else {
+      // Create new user with Google info
+      const adminEmails = ["admin@caregroove.com", "manager@caregroove.com"];
+      const isAdmin = adminEmails.includes(email.toLowerCase());
+      const role = isAdmin ? "admin" : "user";
+      
+      user = new User({
+        name,
+        email,
+        googleId,
+        profilePic: picture,
+        role,
+        password: 'google-oauth', // placeholder since Google users don't need password
+        interests: []
+      });
+      
+      await user.save();
+      console.log('New Google user created:', user._id);
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" } // Longer expiry for Google login
+    );
+
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        profilePic: user.profilePic,
+        interests: user.interests || [],
+      },
+    });
+  } catch (err) {
+    console.error("Google login error:", err.message);
+    res.status(500).json({ success: false, message: "Server error during Google login" });
+  }
+});
+
 module.exports = router;

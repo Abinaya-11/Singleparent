@@ -161,7 +161,7 @@ export default function CareGrooveJobs() {
     }
   };
 
-  // Reusable ProfilePicture component
+  // Reusable ProfilePicture component - matches Main.jsx suggestion section
   const ProfilePicture = ({ user, size = 'w-10 h-10', textSize = 'text-sm' }) => {
     const userName = user?.name || 'Anonymous';
     const profilePic = user?.profilePic;
@@ -174,7 +174,7 @@ export default function CareGrooveJobs() {
     };
 
     return (
-      <div className={`${size} rounded-full overflow-hidden bg-gray-700 flex items-center justify-center`}>
+      <div className={`${size} rounded-full overflow-hidden bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center border-2 border-white shadow-lg`}>
         {profilePic ? (
           <img
             src={getProfilePicUrl(profilePic)}
@@ -182,11 +182,15 @@ export default function CareGrooveJobs() {
             className="w-full h-full object-cover"
             onError={(e) => {
               e.target.style.display = 'none';
-              e.target.parentElement.innerHTML = `<span class="text-white font-semibold ${textSize}">${userName[0]}</span>`;
+              const parent = e.target.parentElement;
+              const fallback = document.createElement('span');
+              fallback.className = `text-white font-bold ${textSize}`;
+              fallback.textContent = userName[0].toUpperCase();
+              parent.appendChild(fallback);
             }}
           />
         ) : (
-          <span className={`text-white font-semibold ${textSize}`}>{userName[0]}</span>
+          <span className={`text-white font-bold ${textSize}`}>{userName[0].toUpperCase()}</span>
         )}
       </div>
     );
@@ -624,27 +628,11 @@ export default function CareGrooveJobs() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-white border-t mt-16">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex space-x-4">
-              <a href="#" className="p-2 hover:bg-gray-100 rounded-full">
-                <Linkedin className="w-5 h-5 text-gray-700" />
-              </a>
-              <a href="#" className="p-2 hover:bg-gray-100 rounded-full">
-                <Twitter className="w-5 h-5 text-gray-700" />
-              </a>
-              <a href="#" className="p-2 hover:bg-gray-100 rounded-full">
-                <Facebook className="w-5 h-5 text-gray-700" />
-              </a>
-              <a href="#" className="p-2 hover:bg-gray-100 rounded-full">
-                <Youtube className="w-5 h-5 text-gray-700" />
-              </a>
-            </div>
-          </div>
+      <footer className="bg-white border-t border-gray-200 py-8">
+        <div className="max-w-7xl mx-auto px-4 text-center text-gray-600 text-sm">
+          © 2025 CareGroove. All rights reserved.
         </div>
       </footer>
-
       {/* Floating Plus Button */}
       <button 
         onClick={() => {

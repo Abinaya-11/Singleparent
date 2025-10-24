@@ -103,8 +103,7 @@ const Groovetalks = () => {
     fetchThoughts();
     fetchConnections();
     
-    const interval = setInterval(fetchThoughts, 5000);
-    return () => clearInterval(interval);
+    // Remove auto-reload interval - only reload when new thought is created or user manually reloads
   }, [fetchThoughts, fetchConnections]);
 
   // Close dropdown when clicking outside
@@ -164,7 +163,7 @@ const Groovetalks = () => {
     }
   };
 
-  // Reusable ProfilePicture component
+  // Reusable ProfilePicture component - matches Main.jsx suggestion section
   const ProfilePicture = ({ user, size = 'w-10 h-10', textSize = 'text-sm' }) => {
     const userName = user?.name || 'Anonymous';
     const profilePic = user?.profilePic;
@@ -177,7 +176,7 @@ const Groovetalks = () => {
     };
 
     return (
-      <div className={`${size} rounded-full overflow-hidden bg-gray-700 flex items-center justify-center`}>
+      <div className={`${size} rounded-full overflow-hidden bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center border-2 border-white shadow-lg`}>
         {profilePic ? (
           <img
             src={getProfilePicUrl(profilePic)}
@@ -185,11 +184,15 @@ const Groovetalks = () => {
             className="w-full h-full object-cover"
             onError={(e) => {
               e.target.style.display = 'none';
-              e.target.parentElement.innerHTML = `<span class="text-white font-semibold ${textSize}">${userName[0]}</span>`;
+              const parent = e.target.parentElement;
+              const fallback = document.createElement('span');
+              fallback.className = `text-white font-bold ${textSize}`;
+              fallback.textContent = userName[0].toUpperCase();
+              parent.appendChild(fallback);
             }}
           />
         ) : (
-          <span className={`text-white font-semibold ${textSize}`}>{userName[0]}</span>
+          <span className={`text-white font-bold ${textSize}`}>{userName[0].toUpperCase()}</span>
         )}
       </div>
     );
@@ -357,15 +360,9 @@ const Groovetalks = () => {
       </button>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-12">
-        <div className="max-w-6xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex gap-6 text-sm">
-              <button className="text-gray-600 hover:text-gray-900">Resources</button>
-              <button className="text-gray-600 hover:text-gray-900">Legal</button>
-              <button className="text-gray-600 hover:text-gray-900">Contact Us</button>
-            </div>
-          </div>
+      <footer className="bg-white border-t border-gray-200 py-8">
+        <div className="max-w-7xl mx-auto px-4 text-center text-gray-600 text-sm">
+          © 2025 CareGroove. All rights reserved.
         </div>
       </footer>
     </div>

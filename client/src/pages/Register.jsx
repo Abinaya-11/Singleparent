@@ -3,7 +3,7 @@ import axios from "axios";
 import { FaUser, FaEnvelope, FaLock } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import illustration from "../assets/login-illustration.jpg";
-
+import { Heart} from 'lucide-react';
 const Register = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -54,7 +54,14 @@ const Register = () => {
           className="w-[75%] object-contain"
         />
       </div>
-
+    <div className="absolute top-4 right-4 sm:right-6 md:right-8 flex space-x-4 sm:space-x-6 text-sm sm:text-base md:text-lg font-semibold text-[#A07627] z-10">
+      <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full flex items-center justify-center">
+            <Heart className="w-4 h-4 text-white" />
+          </div>
+          <span className="text-xl font-bold text-gray-700">CareGroove</span>
+        </div>
+      </div>
       {/* RIGHT PANEL - Form */}
       <div className="w-full md:w-[40%] flex flex-col justify-center px-6 md:px-12 py-10">
         <div className="w-full max-w-md mx-auto">

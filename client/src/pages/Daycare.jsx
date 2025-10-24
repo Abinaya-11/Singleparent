@@ -254,19 +254,38 @@ export default function CareGrooveLanding() {
                   key={caregiver._id}
                   className="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
                 >
-                  <div className="flex flex-col items-center mb-4">
-                    <img
-                      src={caregiver.image || "https://via.placeholder.com/150"}
-                      alt={caregiver.name}
-                      className="w-24 h-24 rounded-full object-cover mb-4"
-                    />
-                    <h3 className="text-xl font-semibold text-gray-900">
+                  {/* Profile Picture - First */}
+                  <div className="flex justify-center mb-4">
+                    {caregiver.image ? (
+                      <img
+                        src={caregiver.image}
+                        alt={caregiver.name}
+                        className="w-24 h-24 rounded-full object-cover border-2 border-white shadow-lg"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          const parent = e.target.parentElement;
+                          const fallback = document.createElement('div');
+                          fallback.className = 'w-24 h-24 rounded-full border-2 border-white shadow-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center';
+                          fallback.innerHTML = `<span class="text-white text-3xl font-bold">${caregiver.name[0].toUpperCase()}</span>`;
+                          parent.appendChild(fallback);
+                        }}
+                      />
+                    ) : (
+                      <div className="w-24 h-24 rounded-full border-2 border-white shadow-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                        <span className="text-white text-3xl font-bold">{caregiver.name[0].toUpperCase()}</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Name and Details - Second */}
+                  <div className="text-center mb-4">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-1">
                       {caregiver.name}
                     </h3>
                     {caregiver.age && (
-                      <p className="text-sm text-gray-500">{caregiver.age} years old</p>
+                      <p className="text-sm text-gray-500 mb-2">{caregiver.age} years old</p>
                     )}
-                    <div className="flex items-center mt-2">
+                    <div className="flex items-center justify-center mt-2">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         className="w-4 h-4 text-orange-500 fill-orange-500"
